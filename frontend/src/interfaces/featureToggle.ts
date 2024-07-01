@@ -4,7 +4,7 @@ import type { ITag } from './tags';
 /**
  * @deprecated use FeatureSchema from openapi
  */
-export interface IFeatureToggleListItem {
+export interface IFeatureFlagListItem {
     type: string;
     name: string;
     stale?: boolean;
@@ -32,6 +32,15 @@ export type ILastSeenEnvironments = Pick<
     'name' | 'enabled' | 'lastSeenAt' | 'yes' | 'no'
 >;
 
+export type Lifecycle = {
+    stage: 'initial' | 'pre-live' | 'live' | 'completed' | 'archived';
+    status?: string;
+    enteredStageAt: string;
+};
+
+/**
+ * @deprecated use FeatureSchema from openapi
+ */
 export interface IFeatureToggle {
     stale: boolean;
     archived: boolean;
@@ -49,7 +58,13 @@ export interface IFeatureToggle {
     impressionData: boolean;
     strategies?: IFeatureStrategy[];
     dependencies: Array<IDependency>;
+    lifecycle?: Lifecycle;
     children: Array<string>;
+    createdBy?: {
+        id: string;
+        name: string;
+        imageUrl: string;
+    };
 }
 
 export interface IDependency {
@@ -65,6 +80,8 @@ export interface IFeatureEnvironment {
     strategies: IFeatureStrategy[];
     variants?: IFeatureVariant[];
     lastSeenAt?: string;
+    yes?: number;
+    no?: number;
 }
 
 export interface IFeatureEnvironmentWithCrEnabled extends IFeatureEnvironment {

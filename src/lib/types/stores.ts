@@ -40,6 +40,12 @@ import { IFeatureSearchStore } from '../features/feature-search/feature-search-s
 import type { IInactiveUsersStore } from '../users/inactive/types/inactive-users-store-type';
 import { ITrafficDataUsageStore } from '../features/traffic-data-usage/traffic-data-usage-store-type';
 import { ISegmentReadModel } from '../features/segment/segment-read-model-type';
+import { IProjectOwnersReadModel } from '../features/project/project-owners-read-model.type';
+import { IFeatureLifecycleStore } from '../features/feature-lifecycle/feature-lifecycle-store-type';
+import { IProjectFlagCreatorsReadModel } from '../features/project/project-flag-creators-read-model.type';
+import { IFeatureStrategiesReadModel } from '../features/feature-toggle/types/feature-strategies-read-model-type';
+import { IFeatureLifecycleReadModel } from '../features/feature-lifecycle/feature-lifecycle-read-model-type';
+import { ILargestResourcesReadModel } from '../features/metrics/sizes/largest-resources-read-model-type';
 
 export interface IUnleashStores {
     accessStore: IAccessStore;
@@ -84,6 +90,12 @@ export interface IUnleashStores {
     inactiveUsersStore: IInactiveUsersStore;
     trafficDataUsageStore: ITrafficDataUsageStore;
     segmentReadModel: ISegmentReadModel;
+    projectOwnersReadModel: IProjectOwnersReadModel;
+    projectFlagCreatorsReadModel: IProjectFlagCreatorsReadModel;
+    featureLifecycleStore: IFeatureLifecycleStore;
+    featureStrategiesReadModel: IFeatureStrategiesReadModel;
+    featureLifecycleReadModel: IFeatureLifecycleReadModel;
+    largestResourcesReadModel: ILargestResourcesReadModel;
 }
 
 export {
@@ -127,4 +139,10 @@ export {
     IFeatureSearchStore,
     ITrafficDataUsageStore,
     ISegmentReadModel,
+    IProjectOwnersReadModel,
+    IFeatureLifecycleStore,
+    IProjectFlagCreatorsReadModel,
+    IFeatureStrategiesReadModel,
+    IFeatureLifecycleReadModel,
+    ILargestResourcesReadModel,
 };

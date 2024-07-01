@@ -5,10 +5,14 @@ import {
     type IUnleashServices,
     NONE,
     serializeDates,
+    UPDATE_FEATURE,
 } from '../../types';
 import type { OpenApiService } from '../../services';
 import {
+    createRequestSchema,
     createResponseSchema,
+    emptyResponse,
+    type FeatureLifecycleCompletedSchema,
     featureLifecycleSchema,
     type FeatureLifecycleSchema,
     getStandardResponses,
@@ -16,6 +20,8 @@ import {
 import Controller from '../../routes/controller';
 import type { Request, Response } from 'express';
 import { NotFoundError } from '../../error';
+import type { IAuthRequest } from '../../routes/unleash-types';
+import type { WithTransactional } from '../../db/transaction';
 
 interface FeatureLifecycleParams {
     projectId: string;
@@ -25,7 +31,7 @@ interface FeatureLifecycleParams {
 const PATH = '/:projectId/features/:featureName/lifecycle';
 
 export default class FeatureLifecycleController extends Controller {
-    private featureLifecycleService: FeatureLifecycleService;
+    private featureLifecycleService: WithTransactional<FeatureLifecycleService>;
 
     private openApiService: OpenApiService;
 
@@ -34,12 +40,15 @@ export default class FeatureLifecycleController extends Controller {
     constructor(
         config: IUnleashConfig,
         {
-            featureLifecycleService,
+            transactionalFeatureLifecycleService,
             openApiService,
-        }: Pick<IUnleashServices, 'openApiService' | 'featureLifecycleService'>,
+        }: Pick<
+            IUnleashServices,
+            'openApiService' | 'transactionalFeatureLifecycleService'
+        >,
     ) {
         super(config);
-        this.featureLifecycleService = featureLifecycleService;
+        this.featureLifecycleService = transactionalFeatureLifecycleService;
         this.openApiService = openApiService;
         this.flagResolver = config.flagResolver;
 
@@ -57,6 +66,49 @@ export default class FeatureLifecycleController extends Controller {
                     operationId: 'getFeatureLifecycle',
                     responses: {
                         200: createResponseSchema('featureLifecycleSchema'),
+                        ...getStandardResponses(401, 403, 404),
+                    },
+                }),
+            ],
+        });
+
+        this.route({
+            method: 'post',
+            path: `${PATH}/complete`,
+            handler: this.complete,
+            permission: UPDATE_FEATURE,
+            acceptAnyContentType: true,
+            middleware: [
+                openApiService.validPath({
+                    tags: ['Unstable'],
+                    summary: 'Set feature completed',
+                    description: 'This will set the feature as completed.',
+                    operationId: 'complete',
+                    requestBody: createRequestSchema(
+                        'featureLifecycleCompletedSchema',
+                    ),
+                    responses: {
+                        200: emptyResponse,
+                        ...getStandardResponses(401, 403, 404),
+                    },
+                }),
+            ],
+        });
+
+        this.route({
+            method: 'post',
+            path: `${PATH}/uncomplete`,
+            handler: this.uncomplete,
+            permission: UPDATE_FEATURE,
+            acceptAnyContentType: true,
+            middleware: [
+                openApiService.validPath({
+                    tags: ['Unstable'],
+                    summary: 'Set feature uncompleted',
+                    description: 'This will set the feature as uncompleted.',
+                    operationId: 'uncomplete',
+                    responses: {
+                        200: emptyResponse,
                         ...getStandardResponses(401, 403, 404),
                     },
                 }),
@@ -82,5 +134,43 @@ export default class FeatureLifecycleController extends Controller {
             featureLifecycleSchema.$id,
             serializeDates(result),
         );
+    }
+
+    async complete(
+        req: IAuthRequest<
+            FeatureLifecycleParams,
+            any,
+            FeatureLifecycleCompletedSchema
+        >,
+        res: Response,
+    ): Promise<void> {
+        if (!this.flagResolver.isEnabled('featureLifecycle')) {
+            throw new NotFoundError('Feature lifecycle is disabled.');
+        }
+        const { featureName, projectId } = req.params;
+
+        const status = req.body;
+
+        await this.featureLifecycleService.transactional((service) =>
+            service.featureCompleted(featureName, projectId, status, req.audit),
+        );
+
+        res.status(200).end();
+    }
+
+    async uncomplete(
+        req: IAuthRequest<FeatureLifecycleParams>,
+        res: Response,
+    ): Promise<void> {
+        if (!this.flagResolver.isEnabled('featureLifecycle')) {
+            throw new NotFoundError('Feature lifecycle is disabled.');
+        }
+        const { featureName, projectId } = req.params;
+
+        await this.featureLifecycleService.transactional((service) =>
+            service.featureUncompleted(featureName, projectId, req.audit),
+        );
+
+        res.status(200).end();
     }
 }

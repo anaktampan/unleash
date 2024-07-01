@@ -21,6 +21,8 @@ beforeAll(async () => {
             experimental: {
                 flags: {
                     strictSchemaValidation: true,
+                    featureLifecycle: true,
+                    anonymiseEventLog: true,
                 },
             },
         },
@@ -101,10 +103,18 @@ const searchFeaturesWithOffset = async (
         .expect(expectedCode);
 };
 
-const filterFeaturesByType = async (types: string[], expectedCode = 200) => {
-    const typeParams = types.map((type) => `type[]=${type}`).join('&');
+const filterFeaturesByType = async (typeParams: string, expectedCode = 200) => {
     return app.request
-        .get(`/api/admin/search/features?${typeParams}`)
+        .get(`/api/admin/search/features?type=${typeParams}`)
+        .expect(expectedCode);
+};
+
+const filterFeaturesByCreatedBy = async (
+    createdByParams: string,
+    expectedCode = 200,
+) => {
+    return app.request
+        .get(`/api/admin/search/features?createdBy=${createdByParams}`)
         .expect(expectedCode);
 };
 
@@ -172,7 +182,26 @@ test('should search matching features by name', async () => {
     const { body } = await searchFeatures({ query: 'feature' });
 
     expect(body).toMatchObject({
-        features: [{ name: 'my_feature_a' }, { name: 'my_feature_b' }],
+        features: [
+            {
+                name: 'my_feature_a',
+                createdBy: {
+                    id: 1,
+                    name: '3957b71c0@unleash.run',
+                    imageUrl:
+                        'https://gravatar.com/avatar/3957b71c0a6d2528f03b423f432ed2efe855d263400f960248a1080493d9d68a?s=42&d=retro&r=g',
+                },
+            },
+            {
+                name: 'my_feature_b',
+                createdBy: {
+                    id: 1,
+                    name: '3957b71c0@unleash.run',
+                    imageUrl:
+                        'https://gravatar.com/avatar/3957b71c0a6d2528f03b423f432ed2efe855d263400f960248a1080493d9d68a?s=42&d=retro&r=g',
+                },
+            },
+        ],
         total: 2,
     });
 });
@@ -218,13 +247,35 @@ test('should filter features by type', async () => {
         type: 'experimental',
     });
 
-    const { body } = await filterFeaturesByType([
-        'experimental',
-        'kill-switch',
-    ]);
+    const { body } = await filterFeaturesByType(
+        'IS_ANY_OF:experimental,kill-switch',
+    );
 
     expect(body).toMatchObject({
         features: [{ name: 'my_feature_b' }],
+    });
+});
+
+test('should filter features by created by', async () => {
+    await app.createFeature({
+        name: 'my_feature_a',
+        type: 'release',
+    });
+    await app.createFeature({
+        name: 'my_feature_b',
+        type: 'experimental',
+    });
+
+    const { body } = await filterFeaturesByCreatedBy('IS:1');
+
+    expect(body).toMatchObject({
+        features: [{ name: 'my_feature_a' }, { name: 'my_feature_b' }],
+    });
+
+    const { body: emptyResults } = await filterFeaturesByCreatedBy('IS:2');
+
+    expect(emptyResults).toMatchObject({
+        features: [],
     });
 });
 
@@ -726,6 +777,23 @@ test('should return segments in payload with no duplicates/nulls', async () => {
             {
                 name: 'my_feature_a',
                 segments: [mySegment.name],
+                environments: [
+                    {
+                        name: 'default',
+                        hasStrategies: true,
+                        hasEnabledStrategies: true,
+                    },
+                    {
+                        name: 'development',
+                        hasStrategies: true,
+                        hasEnabledStrategies: true,
+                    },
+                    {
+                        name: 'production',
+                        hasStrategies: false,
+                        hasEnabledStrategies: false,
+                    },
+                ],
             },
         ],
     });
@@ -924,7 +992,7 @@ test('should filter features by combined operators', async () => {
     });
 });
 
-test('should return environment usage metrics', async () => {
+test('should return environment usage metrics and lifecycle', async () => {
     await app.createFeature({
         name: 'my_feature_b',
         createdAt: '2023-01-29T15:21:39.975Z',
@@ -941,12 +1009,27 @@ test('should return environment usage metrics', async () => {
         },
         {
             featureName: `my_feature_b`,
+            appName: `web2`,
+            environment: 'development',
+            timestamp: new Date(),
+            yes: 5,
+            no: 2,
+        },
+        {
+            featureName: `my_feature_b`,
             appName: `web`,
             environment: 'production',
             timestamp: new Date(),
             yes: 2,
             no: 2,
         },
+    ]);
+
+    await stores.featureLifecycleStore.insert([
+        { feature: 'my_feature_b', stage: 'initial' },
+    ]);
+    await stores.featureLifecycleStore.insert([
+        { feature: 'my_feature_b', stage: 'completed', status: 'discarded' },
     ]);
 
     const { body } = await searchFeatures({
@@ -956,6 +1039,7 @@ test('should return environment usage metrics', async () => {
         features: [
             {
                 name: 'my_feature_b',
+                lifecycle: { stage: 'completed', status: 'discarded' },
                 environments: [
                     {
                         name: 'default',
@@ -964,8 +1048,8 @@ test('should return environment usage metrics', async () => {
                     },
                     {
                         name: 'development',
-                        yes: 5,
-                        no: 2,
+                        yes: 10,
+                        no: 4,
                     },
                     {
                         name: 'production',

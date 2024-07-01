@@ -13,6 +13,9 @@ export const resourceLimitsSchema = {
         'actionSetFilterValues',
         'signalEndpoints',
         'signalTokensPerEndpoint',
+        'featureEnvironmentStrategies',
+        'constraintValues',
+        'environments',
     ],
     additionalProperties: false,
     properties: {
@@ -60,6 +63,24 @@ export const resourceLimitsSchema = {
             example: 10,
             description:
                 'The maximum number of signal tokens per endpoint allowed.',
+        },
+        featureEnvironmentStrategies: {
+            type: 'integer',
+            example: 30,
+            description:
+                'The maximum number of feature environment strategies allowed.',
+        },
+        constraintValues: {
+            type: 'integer',
+            example: 250,
+            description:
+                'The maximum number of values for a single constraint.',
+        },
+        environments: {
+            type: 'integer',
+            minimum: 1,
+            example: 50,
+            description: 'The maximum number active environments allowed.',
         },
     },
     components: {},

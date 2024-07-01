@@ -59,7 +59,10 @@ export type CustomEvents =
     | 'search-bar'
     | 'sdk-reporting'
     | 'insights-share'
-    | 'sdk-banner';
+    | 'many-strategies'
+    | 'sdk-banner'
+    | 'feature-lifecycle'
+    | 'command-bar';
 
 export const usePlausibleTracker = () => {
     const plausible = useContext(PlausibleContext);

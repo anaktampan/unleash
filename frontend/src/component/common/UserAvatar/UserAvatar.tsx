@@ -9,24 +9,34 @@ import type { IUser } from 'interfaces/user';
 import type { FC } from 'react';
 import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
 
-const StyledAvatar = styled(Avatar)(({ theme }) => ({
-    width: theme.spacing(3.5),
-    height: theme.spacing(3.5),
-    margin: 'auto',
-    backgroundColor: theme.palette.secondary.light,
-    color: theme.palette.text.primary,
-    fontSize: theme.fontSizes.smallerBody,
-    fontWeight: theme.fontWeight.bold,
-}));
+const StyledAvatar = styled(Avatar, {
+    shouldForwardProp: (prop) => prop !== 'avatarWidth',
+})<{ avatarWidth?: (theme: Theme) => string }>(({ theme, avatarWidth }) => {
+    const width = avatarWidth ? avatarWidth(theme) : theme.spacing(3.5);
 
-interface IUserAvatarProps extends AvatarProps {
-    user?: IUser;
+    return {
+        width,
+        height: width,
+        margin: 'auto',
+        backgroundColor: theme.palette.secondary.light,
+        color: theme.palette.text.primary,
+        fontSize: theme.fontSizes.smallerBody,
+        fontWeight: theme.fontWeight.bold,
+    };
+});
+
+export interface IUserAvatarProps extends AvatarProps {
+    user?: Partial<
+        Pick<IUser, 'id' | 'name' | 'email' | 'username' | 'imageUrl'>
+    >;
     src?: string;
     title?: string;
     onMouseEnter?: (event: any) => void;
     onMouseLeave?: () => void;
     className?: string;
     sx?: SxProps<Theme>;
+    avatarWidth?: (theme: Theme) => string;
+    hideTitle?: boolean;
 }
 
 export const UserAvatar: FC<IUserAvatarProps> = ({
@@ -38,9 +48,10 @@ export const UserAvatar: FC<IUserAvatarProps> = ({
     className,
     sx,
     children,
+    hideTitle,
     ...props
 }) => {
-    if (!title && !onMouseEnter && user) {
+    if (!hideTitle && !title && !onMouseEnter && user) {
         title = `${user?.name || user?.email || user?.username} (id: ${
             user?.id
         })`;
@@ -68,7 +79,7 @@ export const UserAvatar: FC<IUserAvatarProps> = ({
             sx={sx}
             {...props}
             data-loading
-            alt='Gravatar'
+            alt={user?.name || user?.email || user?.username || 'Gravatar'}
             src={src}
             title={title}
             onMouseEnter={onMouseEnter}

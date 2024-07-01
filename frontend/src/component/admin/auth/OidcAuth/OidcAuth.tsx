@@ -59,6 +59,10 @@ export const OidcAuth = () => {
         setValue(event.target.name, event.target.value);
     };
 
+    const trimAndUpdateField = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setValue(event.target.name, event.target.value.trim());
+    };
+
     const updateEnabled = () => {
         setData({ ...data, enabled: !data.enabled });
     };
@@ -146,7 +150,7 @@ export const OidcAuth = () => {
                     </Grid>
                     <Grid item md={6}>
                         <TextField
-                            onChange={updateField}
+                            onChange={trimAndUpdateField}
                             label='Discover URL'
                             name='discoverUrl'
                             value={data.discoverUrl}
@@ -164,7 +168,7 @@ export const OidcAuth = () => {
                     </Grid>
                     <Grid item md={6}>
                         <TextField
-                            onChange={updateField}
+                            onChange={trimAndUpdateField}
                             label='Client ID'
                             name='clientId'
                             value={data.clientId}
@@ -185,7 +189,7 @@ export const OidcAuth = () => {
                     </Grid>
                     <Grid item md={6}>
                         <TextField
-                            onChange={updateField}
+                            onChange={trimAndUpdateField}
                             label='Client Secret'
                             name='secret'
                             value={data.secret}
@@ -255,6 +259,7 @@ export const OidcAuth = () => {
                     data={data}
                     setValue={setValue}
                 />
+
                 <AutoCreateForm
                     data={data}
                     setValue={setValue}
@@ -296,6 +301,7 @@ export const OidcAuth = () => {
                         </FormControl>
                     </Grid>
                 </Grid>
+
                 <Grid container spacing={3}>
                     <Grid item md={12}>
                         <Button

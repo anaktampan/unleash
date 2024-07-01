@@ -67,6 +67,7 @@ export type CustomAuthHandler = (
 ) => void;
 
 export interface IAuthOption {
+    demoAllowAdminLogin?: boolean;
     enableApiToken: boolean;
     type: IAuthType;
     customAuthHandler?: CustomAuthHandler;
@@ -80,8 +81,8 @@ export interface IAuthOption {
 
 export interface IImportOption {
     file: string;
-    keepExisting: boolean;
-    dropBeforeImport: boolean;
+    project: string;
+    environment: string;
 }
 
 export interface IServerOption {
@@ -140,6 +141,7 @@ export interface IUnleashOptions {
     metricsRateLimiting?: Partial<IMetricsRateLimiting>;
     dailyMetricsStorageDays?: number;
     rateLimiting?: Partial<IRateLimiting>;
+    resourceLimits?: Partial<Pick<ResourceLimitsSchema, 'constraintValues'>>;
 }
 
 export interface IEmailOption {

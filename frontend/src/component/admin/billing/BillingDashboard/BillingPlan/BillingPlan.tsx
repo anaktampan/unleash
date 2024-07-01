@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useMemo } from 'react';
 import { Alert, Divider, Grid, styled, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 import CheckIcon from '@mui/icons-material/Check';
@@ -15,6 +16,9 @@ import { GridRow } from 'component/common/GridRow/GridRow';
 import { GridCol } from 'component/common/GridCol/GridCol';
 import { Badge } from 'component/common/Badge/Badge';
 import { GridColLink } from './GridColLink/GridColLink';
+import { useTrafficDataEstimation } from 'hooks/useTrafficData';
+import { useUiFlag } from 'hooks/useUiFlag';
+import { useInstanceTrafficMetrics } from 'hooks/api/getters/useInstanceTrafficMetrics/useInstanceTrafficMetrics';
 
 const StyledPlanBox = styled('aside')(({ theme }) => ({
     padding: theme.spacing(2.5),
@@ -71,10 +75,21 @@ interface IBillingPlanProps {
     instanceStatus: IInstanceStatus;
 }
 
+const proPlanIncludedRequests = 53_000_000;
+
 export const BillingPlan: FC<IBillingPlanProps> = ({ instanceStatus }) => {
-    const { users } = useUsers();
+    const { users, loading } = useUsers();
     const expired = trialHasExpired(instanceStatus);
-    const { uiConfig } = useUiConfig();
+    const { isPro } = useUiConfig();
+
+    const {
+        currentPeriod,
+        toChartData,
+        toTrafficUsageSum,
+        endpointsInfo,
+        getDayLabels,
+        calculateOverageCost,
+    } = useTrafficDataEstimation();
 
     const eligibleUsers = users.filter((user: any) => user.email);
 
@@ -89,11 +104,39 @@ export const BillingPlan: FC<IBillingPlanProps> = ({ instanceStatus }) => {
 
     const planPrice = price[instanceStatus.plan];
     const seats = instanceStatus.seats ?? 5;
+
     const freeAssigned = Math.min(eligibleUsers.length, seats);
     const paidAssigned = eligibleUsers.length - freeAssigned;
     const paidAssignedPrice = price.user * paidAssigned;
-    const finalPrice = planPrice + paidAssignedPrice;
+
+    const displayTrafficDataUsageEnabled = useUiFlag('displayTrafficDataUsage');
+    const includedTraffic = isPro() ? proPlanIncludedRequests : 0;
+    const traffic = useInstanceTrafficMetrics(currentPeriod.key);
+
+    const overageCost = useMemo(() => {
+        if (!displayTrafficDataUsageEnabled || !includedTraffic) {
+            return 0;
+        }
+        const trafficData = toChartData(
+            getDayLabels(currentPeriod.dayCount),
+            traffic,
+            endpointsInfo,
+        );
+        const totalTraffic = toTrafficUsageSum(trafficData);
+        return calculateOverageCost(totalTraffic, includedTraffic);
+    }, [
+        displayTrafficDataUsageEnabled,
+        includedTraffic,
+        traffic,
+        currentPeriod,
+        endpointsInfo,
+    ]);
+
+    const totalCost = planPrice + paidAssignedPrice + overageCost;
+
     const inactive = instanceStatus.state !== InstanceState.ACTIVE;
+
+    if (loading) return null;
 
     return (
         <Grid item xs={12} md={7}>
@@ -105,7 +148,7 @@ export const BillingPlan: FC<IBillingPlanProps> = ({ instanceStatus }) => {
                             After you have sent your billing information, your
                             instance will be upgraded - you don't have to do
                             anything.{' '}
-                            <a href='mailto:elise@getunleash.ai?subject=PRO plan clarifications'>
+                            <a href='mailto:customersuccess@getunleash.io?subject=PRO plan clarifications'>
                                 Get in touch with us
                             </a>{' '}
                             for any clarification
@@ -185,7 +228,11 @@ export const BillingPlan: FC<IBillingPlanProps> = ({ instanceStatus }) => {
                                         </Typography>
                                     </GridCol>
                                 </GridRow>
-                                <GridRow>
+                                <GridRow
+                                    sx={(theme) => ({
+                                        marginBottom: theme.spacing(1.5),
+                                    })}
+                                >
                                     <GridCol vertical>
                                         <Typography>
                                             <strong>Paid members</strong>
@@ -210,6 +257,40 @@ export const BillingPlan: FC<IBillingPlanProps> = ({ instanceStatus }) => {
                                         </Typography>
                                     </GridCol>
                                 </GridRow>
+                                <ConditionallyRender
+                                    condition={overageCost > 0}
+                                    show={
+                                        <GridRow>
+                                            <GridCol vertical>
+                                                <Typography>
+                                                    <strong>
+                                                        Accrued traffic charges
+                                                    </strong>
+                                                    <GridColLink>
+                                                        <Link to='/admin/network/data-usage'>
+                                                            view details
+                                                        </Link>
+                                                    </GridColLink>
+                                                </Typography>
+                                                <StyledInfoLabel>
+                                                    $5 dollar per 1 million
+                                                    started above included data
+                                                </StyledInfoLabel>
+                                            </GridCol>
+                                            <GridCol>
+                                                <Typography
+                                                    sx={(theme) => ({
+                                                        fontSize:
+                                                            theme.fontSizes
+                                                                .mainHeader,
+                                                    })}
+                                                >
+                                                    ${overageCost.toFixed(2)}
+                                                </Typography>
+                                            </GridCol>
+                                        </GridRow>
+                                    }
+                                />
                             </Grid>
                             <StyledDivider />
                             <Grid container>
@@ -223,7 +304,7 @@ export const BillingPlan: FC<IBillingPlanProps> = ({ instanceStatus }) => {
                                                     theme.fontSizes.mainHeader,
                                             })}
                                         >
-                                            Total per month
+                                            Total
                                         </Typography>
                                     </GridCol>
                                     <GridCol>
@@ -234,7 +315,7 @@ export const BillingPlan: FC<IBillingPlanProps> = ({ instanceStatus }) => {
                                                 fontSize: '2rem',
                                             })}
                                         >
-                                            ${finalPrice.toFixed(2)}
+                                            ${totalCost.toFixed(2)}
                                         </Typography>
                                     </GridCol>
                                 </GridRow>

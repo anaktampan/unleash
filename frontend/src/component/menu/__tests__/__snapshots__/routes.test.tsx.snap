@@ -70,15 +70,7 @@ exports[`returns all baseRoutes 1`] = `
     "menu": {},
     "parent": "/projects/:projectId/features",
     "path": "/projects/:projectId/create-toggle",
-    "title": "Create feature toggle",
-    "type": "protected",
-  },
-  {
-    "component": [Function],
-    "menu": {},
-    "parent": "/features",
-    "path": "/projects/:projectId/features2/:featureId",
-    "title": ":featureId",
+    "title": "Create feature flag",
     "type": "protected",
   },
   {
@@ -104,14 +96,6 @@ exports[`returns all baseRoutes 1`] = `
     },
     "path": "/projects",
     "title": "Projects",
-    "type": "protected",
-  },
-  {
-    "component": [Function],
-    "menu": {},
-    "parent": "/features",
-    "path": "/features/:activeTab/:featureId",
-    "title": ":featureId",
     "type": "protected",
   },
   {
@@ -142,11 +126,11 @@ exports[`returns all baseRoutes 1`] = `
   },
   {
     "component": [Function],
-    "enterprise": false,
-    "flag": "executiveDashboardUI",
+    "enterprise": true,
     "menu": {
       "mobile": true,
     },
+    "notFlag": "killInsightsUI",
     "path": "/insights",
     "title": "Insights",
     "type": "protected",
@@ -202,7 +186,7 @@ exports[`returns all baseRoutes 1`] = `
       "mobile": true,
     },
     "path": "/feature-toggle-type/*",
-    "title": "Feature toggle types",
+    "title": "Feature flag types",
     "type": "protected",
   },
   {
@@ -409,7 +393,7 @@ exports[`returns all baseRoutes 1`] = `
     "component": [Function],
     "menu": {},
     "path": "/archive",
-    "title": "Archived toggles",
+    "title": "Archived flags",
     "type": "protected",
   },
   {

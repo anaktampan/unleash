@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
 import { PageContent } from 'component/common/PageContent/PageContent';
 import { useRequiredPathParam } from 'hooks/useRequiredPathParam';
@@ -10,48 +10,39 @@ import { FavoriteIconCell } from 'component/common/Table/cells/FavoriteIconCell/
 import { ActionsCell } from '../ProjectFeatureToggles/ActionsCell/ActionsCell';
 import { ExperimentalColumnsMenu as ColumnsMenu } from './ExperimentalColumnsMenu/ExperimentalColumnsMenu';
 import { useFavoriteFeaturesApi } from 'hooks/api/actions/useFavoriteFeaturesApi/useFavoriteFeaturesApi';
-import { ExportDialog } from 'component/feature/FeatureToggleList/ExportDialog';
 import { MemoizedRowSelectCell } from '../ProjectFeatureToggles/RowSelectCell/RowSelectCell';
 import { BatchSelectionActionsBar } from 'component/common/BatchSelectionActionsBar/BatchSelectionActionsBar';
 import { ProjectFeaturesBatchActions } from '../ProjectFeatureToggles/ProjectFeaturesBatchActions/ProjectFeaturesBatchActions';
-import { MemoizedFeatureEnvironmentSeenCell } from 'component/common/Table/cells/FeatureSeenCell/FeatureEnvironmentSeenCell';
+import {
+    FeatureLifecycleCell,
+    MemoizedFeatureEnvironmentSeenCell,
+} from 'component/common/Table/cells/FeatureSeenCell/FeatureEnvironmentSeenCell';
 import { useChangeRequestsEnabled } from 'hooks/useChangeRequestsEnabled';
 import { useFeatureToggleSwitch } from '../ProjectFeatureToggles/FeatureToggleSwitch/useFeatureToggleSwitch';
 import useLoading from 'hooks/useLoading';
-import {
-    DEFAULT_PAGE_LIMIT,
-    useFeatureSearch,
-} from 'hooks/api/getters/useFeatureSearch/useFeatureSearch';
-import mapValues from 'lodash.mapvalues';
-import { usePersistentTableState } from 'hooks/usePersistentTableState';
-import {
-    BooleansStringParam,
-    FilterItemParam,
-} from 'utils/serializeQueryParams';
-import {
-    ArrayParam,
-    encodeQueryParams,
-    NumberParam,
-    StringParam,
-    withDefault,
-} from 'use-query-params';
 import { ProjectFeatureTogglesHeader } from './ProjectFeatureTogglesHeader/ProjectFeatureTogglesHeader';
 import { createColumnHelper, useReactTable } from '@tanstack/react-table';
 import { withTableState } from 'utils/withTableState';
 import type { FeatureSearchResponseSchema } from 'openapi';
-import { FeatureToggleCell } from './FeatureToggleCell/FeatureToggleCell';
+import {
+    FeatureToggleCell,
+    PlaceholderFeatureToggleCell,
+} from './FeatureToggleCell/FeatureToggleCell';
 import { ProjectOverviewFilters } from './ProjectOverviewFilters';
 import { useDefaultColumnVisibility } from './hooks/useDefaultColumnVisibility';
 import { TableEmptyState } from './TableEmptyState/TableEmptyState';
 import { useRowActions } from './hooks/useRowActions';
-import { useUiFlag } from 'hooks/useUiFlag';
 import { useSelectedData } from './hooks/useSelectedData';
 import { FeatureOverviewCell } from '../../../common/Table/cells/FeatureOverviewCell/FeatureOverviewCell';
+import { useUiFlag } from 'hooks/useUiFlag';
+import {
+    useProjectFeatureSearch,
+    useProjectFeatureSearchActions,
+} from './useProjectFeatureSearch';
+import { AvatarCell } from './AvatarCell';
 
 interface IPaginatedProjectFeatureTogglesProps {
     environments: string[];
-    refreshInterval?: number;
-    storageKey?: string;
 }
 
 const formatEnvironmentColumnId = (environment: string) =>
@@ -62,46 +53,30 @@ const getRowId = (row: { name: string }) => row.name;
 
 export const ProjectFeatureToggles = ({
     environments,
-    refreshInterval = 15 * 1000,
-    storageKey = 'project-feature-toggles-v2',
 }: IPaginatedProjectFeatureTogglesProps) => {
     const projectId = useRequiredPathParam('projectId');
+    const featureLifecycleEnabled = useUiFlag('featureLifecycle');
+    const flagCreatorEnabled = useUiFlag('flagCreator');
 
-    const featuresExportImport = useUiFlag('featuresExportImport');
+    const {
+        features,
+        total,
+        refetch,
+        loading,
+        initialLoad,
+        tableState,
+        setTableState,
+    } = useProjectFeatureSearch(projectId);
 
-    const stateConfig = {
-        offset: withDefault(NumberParam, 0),
-        limit: withDefault(NumberParam, DEFAULT_PAGE_LIMIT),
-        query: StringParam,
-        favoritesFirst: withDefault(BooleansStringParam, true),
-        sortBy: withDefault(StringParam, 'createdAt'),
-        sortOrder: withDefault(StringParam, 'desc'),
-        columns: ArrayParam,
-        tag: FilterItemParam,
-        createdAt: FilterItemParam,
-    };
-    const [tableState, setTableState] = usePersistentTableState(
-        `${storageKey}-${projectId}`,
-        stateConfig,
-    );
+    const { onFlagTypeClick, onTagClick, onAvatarClick } =
+        useProjectFeatureSearchActions(tableState, setTableState);
 
     const filterState = {
         tag: tableState.tag,
         createdAt: tableState.createdAt,
+        type: tableState.type,
+        ...(flagCreatorEnabled ? { createdBy: tableState.createdBy } : {}),
     };
-
-    const { features, total, refetch, loading, initialLoad } = useFeatureSearch(
-        mapValues(
-            {
-                ...encodeQueryParams(stateConfig, tableState),
-                project: `IS:${projectId}`,
-            },
-            (value) => (value ? `${value}` : undefined),
-        ),
-        {
-            refreshInterval,
-        },
-    );
 
     const { favorite, unfavorite } = useFavoriteFeaturesApi();
     const onFavorite = useCallback(
@@ -122,8 +97,10 @@ export const ProjectFeatureToggles = ({
         rowActionsDialogs,
         setFeatureArchiveState,
         setFeatureStaleDialogState,
+        setShowMarkCompletedDialogue,
     } = useRowActions(refetch, projectId);
-    const [showExportDialog, setShowExportDialog] = useState(false);
+
+    const isPlaceholder = Boolean(initialLoad || (loading && total));
 
     const columns = useMemo(
         () => [
@@ -176,7 +153,7 @@ export const ProjectFeatureToggles = ({
             columnHelper.accessor('name', {
                 id: 'name',
                 header: 'Name',
-                cell: FeatureOverviewCell,
+                cell: FeatureOverviewCell(onTagClick, onFlagTypeClick),
                 enableHiding: false,
                 meta: {
                     width: '50%',
@@ -190,6 +167,20 @@ export const ProjectFeatureToggles = ({
                     width: '1%',
                 },
             }),
+            ...(flagCreatorEnabled
+                ? [
+                      columnHelper.accessor('createdBy', {
+                          id: 'createdBy',
+                          header: 'By',
+                          cell: AvatarCell(onAvatarClick),
+                          enableSorting: false,
+                          meta: {
+                              width: '1%',
+                              align: 'center',
+                          },
+                      }),
+                  ]
+                : []),
             columnHelper.accessor('lastSeenAt', {
                 id: 'lastSeenAt',
                 header: 'Last seen',
@@ -205,6 +196,36 @@ export const ProjectFeatureToggles = ({
                     width: '1%',
                 },
             }),
+            ...(featureLifecycleEnabled
+                ? [
+                      columnHelper.accessor('lifecycle', {
+                          id: 'lifecycle',
+                          header: 'Lifecycle',
+                          cell: ({ row: { original } }) => (
+                              <FeatureLifecycleCell
+                                  feature={original}
+                                  onComplete={() => {
+                                      setShowMarkCompletedDialogue({
+                                          featureId: original.name,
+                                          open: true,
+                                      });
+                                  }}
+                                  onUncomplete={refetch}
+                                  onArchive={() =>
+                                      setFeatureArchiveState(original.name)
+                                  }
+                                  data-loading
+                              />
+                          ),
+                          enableSorting: false,
+                          size: 50,
+                          meta: {
+                              align: 'center',
+                              width: '1%',
+                          },
+                      }),
+                  ]
+                : []),
             ...environments.map((name: string) => {
                 const isChangeRequestEnabled = isChangeRequestConfigured(name);
 
@@ -237,7 +258,9 @@ export const ProjectFeatureToggles = ({
                                 someEnabledEnvironmentHasVariants,
                             } = getValue();
 
-                            return (
+                            return isPlaceholder ? (
+                                <PlaceholderFeatureToggleCell />
+                            ) : (
                                 <FeatureToggleCell
                                     value={environment?.enabled || false}
                                     featureId={featureId}
@@ -277,7 +300,14 @@ export const ProjectFeatureToggles = ({
                 },
             }),
         ],
-        [projectId, environments, tableState.favoritesFirst, refetch],
+        [
+            projectId,
+            environments,
+            tableState.favoritesFirst,
+            refetch,
+            isPlaceholder,
+            featureLifecycleEnabled,
+        ],
     );
 
     const placeholderData = useMemo(
@@ -288,7 +318,13 @@ export const ProjectFeatureToggles = ({
                     id: index,
                     type: '-',
                     name: `Feature name ${index}`,
+                    description: '',
                     createdAt: new Date().toISOString(),
+                    createdBy: {
+                        id: 0,
+                        name: '',
+                        imageUrl: '',
+                    },
                     dependencyType: null,
                     favorite: false,
                     impressionData: false,
@@ -299,17 +335,18 @@ export const ProjectFeatureToggles = ({
                         {
                             name: 'development',
                             enabled: false,
+                            type: 'development',
                         },
                         {
                             name: 'production',
                             enabled: false,
+                            type: 'production',
                         },
                     ],
                 })),
         [tableState.limit],
     );
 
-    const isPlaceholder = Boolean(initialLoad || (loading && total));
     const bodyLoadingRef = useLoading(isPlaceholder);
 
     const data = useMemo(() => {
@@ -317,7 +354,7 @@ export const ProjectFeatureToggles = ({
             return placeholderData;
         }
         return features;
-    }, [isPlaceholder, features]);
+    }, [isPlaceholder, JSON.stringify(features)]);
     const allColumnIds = useMemo(
         () => columns.map((column) => column.id).filter(Boolean) as string[],
         [columns],
@@ -339,7 +376,7 @@ export const ProjectFeatureToggles = ({
 
     const { columnVisibility, rowSelection } = table.getState();
     const onToggleColumnVisibility = useCallback(
-        (columnId) => {
+        (columnId: string) => {
             const isVisible = columnVisibility[columnId];
             const newColumnVisibility: Record<string, boolean> = {
                 ...columnVisibility,
@@ -387,11 +424,31 @@ export const ProjectFeatureToggles = ({
                                         id: 'createdAt',
                                         isVisible: columnVisibility.createdAt,
                                     },
+                                    ...(flagCreatorEnabled
+                                        ? [
+                                              {
+                                                  header: 'By',
+                                                  id: 'createdBy',
+                                                  isVisible:
+                                                      columnVisibility.createdBy,
+                                              },
+                                          ]
+                                        : []),
                                     {
                                         header: 'Last seen',
                                         id: 'lastSeenAt',
                                         isVisible: columnVisibility.lastSeenAt,
                                     },
+                                    ...(featureLifecycleEnabled
+                                        ? [
+                                              {
+                                                  header: 'Lifecycle',
+                                                  id: 'lifecycle',
+                                                  isVisible:
+                                                      columnVisibility.lifecycle,
+                                              },
+                                          ]
+                                        : []),
                                     {
                                         id: 'divider',
                                     },
@@ -422,6 +479,7 @@ export const ProjectFeatureToggles = ({
                     aria-live='polite'
                 >
                     <ProjectOverviewFilters
+                        project={projectId}
                         onChange={setTableState}
                         state={filterState}
                     />
@@ -439,18 +497,6 @@ export const ProjectFeatureToggles = ({
                     />
                     {rowActionsDialogs}
 
-                    <ConditionallyRender
-                        condition={featuresExportImport && !loading}
-                        show={
-                            // TODO: `export all` backend
-                            <ExportDialog
-                                showExportDialog={showExportDialog}
-                                data={data}
-                                onClose={() => setShowExportDialog(false)}
-                                environments={environments}
-                            />
-                        }
-                    />
                     {featureToggleModals}
                 </div>
             </PageContent>

@@ -1,4 +1,5 @@
-import type { VFC } from 'react';
+import type React from 'react';
+import type { FC } from 'react';
 import { Box, styled } from '@mui/material';
 import { FavoriteIconButton } from 'component/common/FavoriteIconButton/FavoriteIconButton';
 import useToast from 'hooks/useToast';
@@ -8,24 +9,25 @@ import useProjects from 'hooks/api/getters/useProjects/useProjects';
 interface IProjectCardFooterProps {
     id: string;
     isFavorite?: boolean;
+    children?: React.ReactNode;
 }
 
 const StyledFooter = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    justifyContent: 'space-between',
+    display: 'grid',
+    gridTemplateColumns: 'auto 1fr auto',
     alignItems: 'center',
-    padding: theme.spacing(1, 2),
-    borderTop: `1px solid ${theme.palette.grey[300]}`,
-    backgroundColor: theme.palette.grey[100],
-    boxShadow: 'inset 0px 2px 4px rgba(32, 32, 33, 0.05)', // FIXME: replace with variable
+    padding: theme.spacing(1.5, 3, 2.5, 3),
+    background: theme.palette.envAccordion.expanded,
+    boxShadow: theme.boxShadows.accordionFooter,
 }));
 
 const StyledFavoriteIconButton = styled(FavoriteIconButton)(({ theme }) => ({
     marginRight: theme.spacing(-1),
-    marginLeft: 'auto',
+    marginBottom: theme.spacing(-1),
 }));
 
-export const ProjectCardFooter: VFC<IProjectCardFooterProps> = ({
+export const ProjectCardFooter: FC<IProjectCardFooterProps> = ({
+    children,
     id,
     isFavorite = false,
 }) => {
@@ -48,6 +50,7 @@ export const ProjectCardFooter: VFC<IProjectCardFooterProps> = ({
     };
     return (
         <StyledFooter>
+            {children}
             <StyledFavoriteIconButton
                 onClick={onFavorite}
                 isFavorite={isFavorite}

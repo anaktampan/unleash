@@ -19,10 +19,7 @@ import EnvironmentService from '../../project-environments/environment-service';
 import { ForbiddenError, PatternError, PermissionError } from '../../../error';
 import type { ISegmentService } from '../../segment/segment-service-interface';
 import { createFeatureToggleService, createSegmentService } from '../..';
-import {
-    insertFeatureEnvironmentsLastSeen,
-    insertLastSeenAt,
-} from '../../../../test/e2e/helpers/test-helper';
+import { insertLastSeenAt } from '../../../../test/e2e/helpers/test-helper';
 import { EventService } from '../../../services';
 
 let stores: IUnleashStores;
@@ -67,9 +64,9 @@ afterAll(async () => {
 beforeEach(async () => {
     await db.rawDatabase('change_request_settings').del();
 });
-test('Should create feature toggle strategy configuration', async () => {
+test('Should create feature flag strategy configuration', async () => {
     const projectId = 'default';
-    const username = 'feature-toggle';
+    const username = 'feature-flag';
     const config: Omit<FeatureStrategySchema, 'id'> = {
         name: 'default',
         constraints: [],
@@ -157,7 +154,7 @@ test('Should be able to get strategy by id', async () => {
     expect(fetchedConfig).toEqual(createdConfig);
 });
 
-test('should ignore name in the body when updating feature toggle', async () => {
+test('should ignore name in the body when updating feature flag', async () => {
     const featureName = 'body-name-update';
     const projectId = 'default';
 
@@ -168,7 +165,7 @@ test('should ignore name in the body when updating feature toggle', async () => 
         projectId,
         {
             name: featureName,
-            description: 'First toggle',
+            description: 'First flag',
         },
         TEST_AUDIT_USER,
     );
@@ -177,7 +174,7 @@ test('should ignore name in the body when updating feature toggle', async () => 
         projectId,
         {
             name: secondFeatureName,
-            description: 'Second toggle',
+            description: 'Second flag',
         },
         TEST_AUDIT_USER,
     );
@@ -199,7 +196,7 @@ test('should ignore name in the body when updating feature toggle', async () => 
     });
 
     expect(featureOne.description).toBe(`I'm changed`);
-    expect(featureTwo.description).toBe('Second toggle');
+    expect(featureTwo.description).toBe('Second flag');
 });
 
 test('should not get empty rows as features', async () => {
@@ -211,7 +208,7 @@ test('should not get empty rows as features', async () => {
         projectId,
         {
             name: 'linked-with-segment',
-            description: 'First toggle',
+            description: 'First flag',
         },
         TEST_AUDIT_USER,
     );
@@ -220,7 +217,7 @@ test('should not get empty rows as features', async () => {
         projectId,
         {
             name: 'not-linked-with-segment',
-            description: 'Second toggle',
+            description: 'Second flag',
         },
         TEST_AUDIT_USER,
     );
@@ -252,7 +249,7 @@ test('adding and removing an environment preserves variants when variants per en
         'default',
         {
             name: featureName,
-            description: 'Second toggle',
+            description: 'Second flag',
             variants: [
                 {
                     name: 'variant1',
@@ -273,7 +270,7 @@ test('adding and removing an environment preserves variants when variants per en
             // @ts-expect-error - incomplete flag resolver definition
             flagResolver: {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                isEnabled: (toggleName: string) => false,
+                isEnabled: (flagName: string) => false,
             },
         },
         eventService,
@@ -295,23 +292,23 @@ test('adding and removing an environment preserves variants when variants per en
         SYSTEM_USER_AUDIT,
     );
 
-    const toggle = await service.getFeature({
+    const flag = await service.getFeature({
         featureName,
         projectId: undefined,
         environmentVariants: false,
     });
-    expect(toggle.variants).toHaveLength(1);
+    expect(flag.variants).toHaveLength(1);
 });
 
-test('cloning a feature toggle copies variant environments correctly', async () => {
-    const newToggleName = 'Molly';
-    const clonedToggleName = 'Dolly';
+test('cloning a feature flag copies variant environments correctly', async () => {
+    const newFlagName = 'Molly';
+    const clonedFlagName = 'Dolly';
     const targetEnv = 'gene-lab';
 
     await service.createFeatureToggle(
         'default',
         {
-            name: newToggleName,
+            name: newFlagName,
         },
         TEST_AUDIT_USER,
     );
@@ -322,12 +319,12 @@ test('cloning a feature toggle copies variant environments correctly', async () 
     });
 
     await stores.featureEnvironmentStore.connectFeatureToEnvironmentsForProject(
-        newToggleName,
+        newFlagName,
         'default',
     );
 
     await stores.featureEnvironmentStore.addVariantsToFeatureEnvironment(
-        newToggleName,
+        newFlagName,
         targetEnv,
         [
             {
@@ -340,37 +337,37 @@ test('cloning a feature toggle copies variant environments correctly', async () 
     );
 
     await service.cloneFeatureToggle(
-        newToggleName,
+        newFlagName,
         'default',
-        clonedToggleName,
+        clonedFlagName,
         SYSTEM_USER_AUDIT,
         true,
     );
 
-    const clonedToggle =
+    const clonedFlag =
         await stores.featureStrategiesStore.getFeatureToggleWithVariantEnvs(
-            clonedToggleName,
+            clonedFlagName,
         );
 
-    const defaultEnv = clonedToggle.environments.find(
+    const defaultEnv = clonedFlag.environments.find(
         (x) => x.name === 'default',
     );
-    const newEnv = clonedToggle.environments.find((x) => x.name === targetEnv);
+    const newEnv = clonedFlag.environments.find((x) => x.name === targetEnv);
 
     expect(defaultEnv!!.variants).toHaveLength(0);
     expect(newEnv!!.variants).toHaveLength(1);
 });
 
-test('cloning a feature toggle not allowed for change requests enabled', async () => {
+test('cloning a feature flag not allowed for change requests enabled', async () => {
     await db.rawDatabase('change_request_settings').insert({
         project: 'default',
         environment: 'default',
     });
     await expect(
         service.cloneFeatureToggle(
-            'newToggleName',
+            'newFlagName',
             'default',
-            'clonedToggleName',
+            'clonedFlagName',
             SYSTEM_USER_AUDIT,
             true,
         ),
@@ -387,7 +384,7 @@ test('changing to a project with change requests enabled should not be allowed',
         environment: 'default',
     });
     await expect(
-        service.changeProject('newToggleName', 'default', TEST_AUDIT_USER),
+        service.changeProject('newFlagName', 'default', TEST_AUDIT_USER),
     ).rejects.toEqual(
         new ForbiddenError(
             `Changing project not allowed. Project default has change requests enabled.`,
@@ -395,9 +392,9 @@ test('changing to a project with change requests enabled should not be allowed',
     );
 });
 
-test('Cloning a feature toggle also clones segments correctly', async () => {
-    const featureName = 'ToggleWithSegments';
-    const clonedFeatureName = 'AWholeNewFeatureToggle';
+test('Cloning a feature flag also clones segments correctly', async () => {
+    const featureName = 'FlagWithSegments';
+    const clonedFeatureName = 'AWholeNewFeatureFlag';
 
     const segment = await segmentService.create(
         {
@@ -529,9 +526,9 @@ test('If CRs are protected for any environment in the project stops bulk update 
         },
     });
 
-    const toggle = await service.createFeatureToggle(
+    const flag = await service.createFeatureToggle(
         project.id,
-        { name: 'crOnVariantToggle' },
+        { name: 'crOnVariantFlag' },
         TEST_AUDIT_USER,
     );
 
@@ -548,7 +545,7 @@ test('If CRs are protected for any environment in the project stops bulk update 
 
     await customFeatureService.setVariantsOnEnvs(
         project.id,
-        toggle.name,
+        flag.name,
         [enabledEnv.name, disabledEnv.name],
         [variant],
         TEST_AUDIT_USER,
@@ -566,7 +563,7 @@ test('If CRs are protected for any environment in the project stops bulk update 
     return expect(async () =>
         customFeatureService.crProtectedSetVariantsOnEnvs(
             project.id,
-            toggle.name,
+            flag.name,
             [enabledEnv.name, disabledEnv.name],
             newVariants,
             {
@@ -689,8 +686,6 @@ test('Should return last seen at per environment', async () => {
     const featureName = 'last-seen-at-per-env';
     const projectId = 'default';
 
-    const userName = 'last-seen-user';
-
     await service.createFeatureToggle(
         projectId,
         {
@@ -698,20 +693,6 @@ test('Should return last seen at per environment', async () => {
         },
         TEST_AUDIT_USER,
     );
-
-    const date = await insertFeatureEnvironmentsLastSeen(
-        featureName,
-        db.rawDatabase,
-    );
-
-    const { environments, lastSeenAt } = await service.getFeature({
-        featureName,
-        projectId: 'default',
-        environmentVariants: false,
-    });
-
-    expect(environments[0].lastSeenAt).toEqual(new Date(date));
-    expect(lastSeenAt).toEqual(new Date(date));
 
     // Test with feature flag on
     const config = createTestConfig();
@@ -733,4 +714,33 @@ test('Should return last seen at per environment', async () => {
         new Date(lastSeenAtStoreDate),
     );
     expect(featureToggle.lastSeenAt).toEqual(new Date(lastSeenAtStoreDate));
+});
+
+test('Should return "default" for stickiness when creating a flexibleRollout strategy with empty stickiness', async () => {
+    const strategy = {
+        name: 'flexibleRollout',
+        parameters: {
+            rollout: '100',
+            stickiness: '',
+        },
+        constraints: [],
+    };
+    const feature = {
+        name: 'test-feature-stickiness-1',
+        description: 'the #1 feature',
+    };
+    const projectId = 'default';
+
+    await service.createFeatureToggle(projectId, feature, TEST_AUDIT_USER);
+    await service.createStrategy(
+        strategy,
+        { projectId, featureName: feature.name, environment: DEFAULT_ENV },
+        TEST_AUDIT_USER,
+    );
+
+    const featureDB = await service.getFeature({ featureName: feature.name });
+
+    expect(featureDB.environments[0]).toMatchObject({
+        strategies: [{ parameters: { stickiness: 'default' } }],
+    });
 });

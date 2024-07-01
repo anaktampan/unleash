@@ -2,12 +2,16 @@
 title: Jira Server Integration - Installation
 ---
 
-> The Jira Server Plugin is part of Unleash Enterprise.
+:::info Deprecated
 
-With the Unleash Jira server plugin you can create new feature toggles in Unleash from a Jira issue as well as link
-existing toggles to Jira issues.
+The Jira Server plugin is **deprecated**, please use the [Unleash Jira Cloud plugin](https://docs.getunleash.io/reference/integrations/jira-cloud-plugin-installation) instead
 
-The plugin also shows you current status of connected toggles.
+:::
+
+With the Unleash Jira server plugin you can create new feature flags in Unleash from a Jira issue as well as link
+existing flags to Jira issues.
+
+The plugin also shows you current status of connected flags.
 
 ## Prerequisites
 
@@ -82,7 +86,7 @@ Since this is a destructive operation, our plugin will ask for confirmation that
 
 ![A plugin deletion confirmation dialog. It gives you two options: "Delete connection", and "Cancel".](/img/jira_server_delete_server_confirmation.png)
 
-You cannot delete a server that has toggles connected to issues. Instead, you'll get a
-warning dialog telling you that you'll need to disconnect the toggles from their issues first.
+You cannot delete a server that has flags connected to issues. Instead, you'll get a
+warning dialog telling you that you'll need to disconnect the flags from their issues first.
 
 ![A warning dialog telling you that you can't delete a server.](/img/jira_server_delete_connected_toggles.png)

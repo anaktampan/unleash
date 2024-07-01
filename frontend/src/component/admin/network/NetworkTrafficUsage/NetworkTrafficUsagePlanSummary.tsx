@@ -1,28 +1,38 @@
 import styled from '@mui/material/styles/styled';
 import Box from '@mui/system/Box';
 import Grid from '@mui/material/Grid';
-import { flexRow } from 'themes/themeStyles';
+import Link from '@mui/material/Link';
 import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
 import { Badge } from 'component/common/Badge/Badge';
-import useUiConfig from 'hooks/api/getters/useUiConfig/useUiConfig';
+import { useUiFlag } from 'hooks/useUiFlag';
+
+const StyledContainerGrid = styled(Grid)(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'row',
+}));
+
+const StyledGrid = styled(Grid)(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'row',
+    flex: '1 1',
+}));
+
+const StyledColumnGrid = styled(Grid)(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    flex: '1 1',
+}));
 
 const StyledContainer = styled('div')(({ theme }) => ({
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
+    flex: '1 1',
     padding: theme.spacing(3),
     border: `2px solid ${theme.palette.divider}`,
     borderRadius: theme.shape.borderRadiusLarge,
 }));
 
-const StyledCardTitleRow = styled(Box)(() => ({
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-}));
-
 const StyledCardDescription = styled(Box)(({ theme }) => ({
-    flex: 1,
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(2.5),
@@ -32,82 +42,126 @@ const StyledCardDescription = styled(Box)(({ theme }) => ({
 }));
 
 const RowContainer = styled(Box)(({ theme }) => ({
-    ...flexRow,
+    display: 'flex',
+    flexDirection: 'row',
 }));
 
 const StyledNumbersDiv = styled('div')(({ theme }) => ({
     marginLeft: 'auto',
     display: 'flex',
-    justifyContent: 'space-between',
     textDecoration: 'none',
     color: theme.palette.text.primary,
 }));
 
 interface INetworkTrafficUsagePlanSummary {
     usageTotal: number;
-    planIncludedRequests: number;
+    includedTraffic: number;
+    overageCost: number;
+    estimatedMonthlyCost: number;
 }
 
 export const NetworkTrafficUsagePlanSummary = ({
     usageTotal,
-    planIncludedRequests,
+    includedTraffic,
+    overageCost,
+    estimatedMonthlyCost,
 }: INetworkTrafficUsagePlanSummary) => {
-    const { isPro } = useUiConfig();
+    const overages = usageTotal - includedTraffic;
+    const estimateFlagEnabled = useUiFlag('estimateTrafficDataCost');
     return (
-        <StyledContainer>
-            <Grid item>
-                <StyledCardTitleRow>
-                    <b>Number of requests to Unleash</b>
-                </StyledCardTitleRow>
-                <StyledCardDescription>
-                    <RowContainer>
-                        Incoming requests for selection{' '}
-                        <StyledNumbersDiv>
-                            <ConditionallyRender
-                                condition={isPro()}
-                                show={
-                                    <ConditionallyRender
-                                        condition={
-                                            usageTotal <= planIncludedRequests
-                                        }
-                                        show={
-                                            <Badge color='success'>
-                                                {usageTotal.toLocaleString()}{' '}
-                                                requests
-                                            </Badge>
-                                        }
-                                        elseShow={
-                                            <Badge color='error'>
-                                                {usageTotal.toLocaleString()}{' '}
-                                                requests
-                                            </Badge>
-                                        }
-                                    />
-                                }
-                                elseShow={
-                                    <Badge color='neutral'>
-                                        {usageTotal.toLocaleString()} requests
-                                    </Badge>
-                                }
-                            />
-                        </StyledNumbersDiv>
-                    </RowContainer>
-                </StyledCardDescription>
-                <ConditionallyRender
-                    condition={isPro()}
-                    show={
+        <StyledContainerGrid container spacing={4}>
+            <StyledGrid item xs={5.5} md={5.5}>
+                <StyledContainer>
+                    <StyledColumnGrid item>
+                        <Box>
+                            <b>Number of requests to Unleash</b>
+                        </Box>
                         <StyledCardDescription>
                             <RowContainer>
-                                Included in your plan monthly
+                                Incoming requests selected month{' '}
                                 <StyledNumbersDiv>
-                                    {planIncludedRequests.toLocaleString()}{' '}
-                                    requests
+                                    <Badge
+                                        color={
+                                            includedTraffic > 0
+                                                ? usageTotal <= includedTraffic
+                                                    ? 'success'
+                                                    : 'error'
+                                                : 'neutral'
+                                        }
+                                    >
+                                        {usageTotal.toLocaleString()} requests
+                                    </Badge>
                                 </StyledNumbersDiv>
                             </RowContainer>
                         </StyledCardDescription>
-                    }
-                />
-            </Grid>
-        </StyledContainer>
+                        <ConditionallyRender
+                            condition={includedTraffic > 0}
+                            show={
+                                <StyledCardDescription>
+                                    <RowContainer>
+                                        Included in your plan monthly
+                                        <StyledNumbersDiv>
+                                            {includedTraffic.toLocaleString()}{' '}
+                                            requests
+                                        </StyledNumbersDiv>
+                                    </RowContainer>
+                                </StyledCardDescription>
+                            }
+                        />
+                    </StyledColumnGrid>
+                </StyledContainer>
+            </StyledGrid>
+            <ConditionallyRender
+                condition={
+                    estimateFlagEnabled && includedTraffic > 0 && overages > 0
+                }
+                show={
+                    <StyledGrid item xs={5.5} md={5.5}>
+                        <StyledContainer>
+                            <StyledColumnGrid item>
+                                <Box>
+                                    <b>Accrued traffic charges</b>
+                                </Box>
+                                <StyledCardDescription>
+                                    <RowContainer>
+                                        Requests overages this month (
+                                        <Link href='https://www.getunleash.io/pricing'>
+                                            pricing
+                                        </Link>
+                                        )
+                                        <StyledNumbersDiv>
+                                            {overages.toLocaleString()} requests
+                                        </StyledNumbersDiv>
+                                    </RowContainer>
+                                    <RowContainer>
+                                        Accrued traffic charges
+                                        <StyledNumbersDiv>
+                                            <Badge color='secondary'>
+                                                {overageCost} USD
+                                            </Badge>
+                                        </StyledNumbersDiv>
+                                    </RowContainer>
+                                    <ConditionallyRender
+                                        condition={estimatedMonthlyCost > 0}
+                                        show={
+                                            <RowContainer>
+                                                Estimated traffic charges based
+                                                on current usage
+                                                <StyledNumbersDiv>
+                                                    <Badge color='secondary'>
+                                                        {estimatedMonthlyCost}{' '}
+                                                        USD
+                                                    </Badge>
+                                                </StyledNumbersDiv>
+                                            </RowContainer>
+                                        }
+                                    />
+                                </StyledCardDescription>
+                            </StyledColumnGrid>
+                        </StyledContainer>
+                    </StyledGrid>
+                }
+            />
+        </StyledContainerGrid>
     );
 };

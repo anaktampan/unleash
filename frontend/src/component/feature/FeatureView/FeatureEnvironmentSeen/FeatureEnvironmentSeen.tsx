@@ -1,5 +1,6 @@
 import TimeAgo from 'react-timeago';
 import { LastSeenTooltip } from 'component/common/Table/cells/FeatureSeenCell/LastSeenTooltip';
+import type React from 'react';
 import type { FC, ReactElement } from 'react';
 import type { ILastSeenEnvironments } from 'interfaces/featureToggle';
 import { TooltipResolver } from 'component/common/TooltipResolver/TooltipResolver';
@@ -17,7 +18,7 @@ interface IFeatureEnvironmentSeenProps {
 
 const StyledContainer = styled('div')(({ theme }) => ({
     display: 'flex',
-    padding: theme.spacing(1.5),
+    padding: theme.spacing(1),
 }));
 
 const StyledBox = styled(Box)(({ theme }) => ({
@@ -33,7 +34,7 @@ const StyledBox = styled(Box)(({ theme }) => ({
     margin: '0 auto',
 }));
 
-const StyledIconWrapper = styled('div')(({ theme }) => ({
+export const StyledIconWrapper = styled('div')(({ theme }) => ({
     width: '20px',
     height: '20px',
     background: theme.palette.background.paper,
@@ -54,6 +55,7 @@ const TooltipContainer: FC<{
     color?: string;
     tooltip: ReactElement | string;
     sx?: SxProps;
+    children?: React.ReactNode;
 }> = ({ sx, tooltip, color, children }) => {
     return (
         <StyledContainer sx={sx}>

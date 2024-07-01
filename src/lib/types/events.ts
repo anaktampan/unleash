@@ -1,6 +1,16 @@
-import type { FeatureToggle, IStrategyConfig, ITag, IVariant } from './model';
+import type {
+    FeatureToggle,
+    IEnvironment,
+    IProject,
+    IStrategyConfig,
+    ITag,
+    IVariant,
+} from './model';
 import type { IApiToken } from './models/api-token';
 import type { IAuditUser, IUserWithRootRole } from './user';
+import type { FeatureLifecycleCompletedSchema } from '../openapi';
+import type { ITagType } from '../features/tag-type/tag-type-store-type';
+import type { IFeatureAndTag } from './stores/feature-tag-store';
 
 export const APPLICATION_CREATED = 'application-created' as const;
 
@@ -29,6 +39,7 @@ export const DROP_FEATURE_TAGS = 'drop-feature-tags' as const;
 export const FEATURE_UNTAGGED = 'feature-untagged' as const;
 export const FEATURE_STALE_ON = 'feature-stale-on' as const;
 export const FEATURE_COMPLETED = 'feature-completed' as const;
+export const FEATURE_UNCOMPLETED = 'feature-uncompleted' as const;
 export const FEATURE_STALE_OFF = 'feature-stale-off' as const;
 export const DROP_FEATURES = 'drop-features' as const;
 export const FEATURE_ENVIRONMENT_ENABLED =
@@ -118,6 +129,7 @@ export const PROJECT_ENVIRONMENT_REMOVED =
 export const DEFAULT_STRATEGY_UPDATED = 'default-strategy-updated' as const;
 
 export const CLIENT_METRICS = 'client-metrics' as const;
+export const CLIENT_METRICS_ADDED = 'client-metrics-added' as const;
 export const CLIENT_REGISTER = 'client-register' as const;
 
 export const PAT_CREATED = 'pat-created' as const;
@@ -208,6 +220,8 @@ export const IEventTypes = [
     FEATURE_STRATEGY_ADD,
     FEATURE_STRATEGY_REMOVE,
     FEATURE_TYPE_UPDATED,
+    FEATURE_COMPLETED,
+    FEATURE_UNCOMPLETED,
     STRATEGY_ORDER_CHANGED,
     DROP_FEATURE_TAGS,
     FEATURE_UNTAGGED,
@@ -336,9 +350,7 @@ export const IEventTypes = [
 ] as const;
 export type IEventType = (typeof IEventTypes)[number];
 
-/**
- * This type should only be used in the store layer but deprecated elsewhere
- */
+// this rerpresents the write model for events
 export interface IBaseEvent {
     type: IEventType;
     createdBy: string;
@@ -346,13 +358,14 @@ export interface IBaseEvent {
     project?: string;
     environment?: string;
     featureName?: string;
-    ip?: string;
+    ip: string;
     data?: any;
     preData?: any;
     tags?: ITag[];
 }
 
-export interface IEvent extends IBaseEvent {
+// This represents the read model for events
+export interface IEvent extends Omit<IBaseEvent, 'ip'> {
     id: number;
     createdAt: Date;
 }
@@ -362,7 +375,7 @@ export interface IEventList {
     events: IEvent[];
 }
 
-class BaseEvent implements IBaseEvent {
+export class BaseEvent implements IBaseEvent {
     readonly type: IEventType;
 
     readonly createdBy: string;
@@ -370,6 +383,7 @@ class BaseEvent implements IBaseEvent {
     readonly createdByUserId: number;
 
     readonly ip: string;
+
     /**
      * @param type the type of the event we're creating.
      * @param auditUser User info used to track which user performed the action. Includes username (email or username), userId and ip
@@ -424,7 +438,11 @@ export class FeatureEnvironmentEvent extends BaseEvent {
         this.environment = p.environment;
     }
 }
-export type StrategyIds = { strategyIds: string[] };
+
+export type StrategyIds = {
+    strategyIds: string[];
+};
+
 export class StrategiesOrderChangedEvent extends BaseEvent {
     readonly project: string;
 
@@ -459,9 +477,13 @@ export class FeatureVariantEvent extends BaseEvent {
 
     readonly featureName: string;
 
-    readonly data: { variants: IVariant[] };
+    readonly data: {
+        variants: IVariant[];
+    };
 
-    readonly preData: { variants: IVariant[] };
+    readonly preData: {
+        variants: IVariant[];
+    };
 
     constructor(p: {
         project: string;
@@ -485,9 +507,13 @@ export class EnvironmentVariantEvent extends BaseEvent {
 
     readonly featureName: string;
 
-    readonly data: { variants: IVariant[] };
+    readonly data: {
+        variants: IVariant[];
+    };
 
-    readonly preData: { variants: IVariant[] };
+    readonly preData: {
+        variants: IVariant[];
+    };
 
     /**
      */
@@ -507,9 +533,11 @@ export class EnvironmentVariantEvent extends BaseEvent {
         this.preData = { variants: p.oldVariants };
     }
 }
+
 export class ProjectCreatedEvent extends BaseEvent {
     readonly project: string;
     readonly data: any;
+
     constructor(eventData: {
         data: any;
         project: string;
@@ -525,6 +553,7 @@ export class ProjectUpdatedEvent extends BaseEvent {
     readonly project: string;
     readonly data: any;
     readonly preData: any;
+
     constructor(eventData: {
         data: any;
         preData: any;
@@ -540,6 +569,7 @@ export class ProjectUpdatedEvent extends BaseEvent {
 
 export class ProjectDeletedEvent extends BaseEvent {
     readonly project: string;
+
     constructor(eventData: {
         project: string;
         auditUser: IAuditUser;
@@ -552,6 +582,7 @@ export class ProjectDeletedEvent extends BaseEvent {
 export class RoleUpdatedEvent extends BaseEvent {
     readonly data: any;
     readonly preData: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -562,6 +593,7 @@ export class RoleUpdatedEvent extends BaseEvent {
         this.preData = eventData.preData;
     }
 }
+
 export class FeatureChangeProjectEvent extends BaseEvent {
     readonly project: string;
 
@@ -582,7 +614,10 @@ export class FeatureChangeProjectEvent extends BaseEvent {
         const { newProject, oldProject, featureName } = p;
         this.project = newProject;
         this.featureName = featureName;
-        this.data = { newProject, oldProject };
+        this.data = {
+            newProject,
+            oldProject,
+        };
     }
 }
 
@@ -607,10 +642,123 @@ export class FeatureCreatedEvent extends BaseEvent {
     }
 }
 
+export class ProjectImport extends BaseEvent {
+    readonly data: IProject;
+    constructor(p: {
+        project: IProject;
+        auditUser: IAuditUser;
+    }) {
+        super(PROJECT_IMPORT, p.auditUser);
+        this.data = p.project;
+    }
+}
+
+export class FeatureImport extends BaseEvent {
+    readonly data: any;
+    constructor(p: {
+        feature: any;
+        auditUser: IAuditUser;
+    }) {
+        super(FEATURE_IMPORT, p.auditUser);
+        this.data = p.feature;
+    }
+}
+
+export class StrategyImport extends BaseEvent {
+    readonly data: any;
+    constructor(p: {
+        strategy: any;
+        auditUser: IAuditUser;
+    }) {
+        super(STRATEGY_IMPORT, p.auditUser);
+        this.data = p.strategy;
+    }
+}
+
+export class EnvironmentImport extends BaseEvent {
+    readonly data: IEnvironment;
+    constructor(p: {
+        env: IEnvironment;
+        auditUser: IAuditUser;
+    }) {
+        super(ENVIRONMENT_IMPORT, p.auditUser);
+        this.data = p.env;
+    }
+}
+
+export class TagTypeImport extends BaseEvent {
+    readonly data: ITagType;
+    constructor(p: {
+        tagType: ITagType;
+        auditUser: IAuditUser;
+    }) {
+        super(TAG_TYPE_IMPORT, p.auditUser);
+        this.data = p.tagType;
+    }
+}
+
+export class TagImport extends BaseEvent {
+    readonly data: ITag;
+    constructor(p: {
+        tag: ITag;
+        auditUser: IAuditUser;
+    }) {
+        super(TAG_IMPORT, p.auditUser);
+        this.data = p.tag;
+    }
+}
+
+export class FeatureTagImport extends BaseEvent {
+    readonly data: IFeatureAndTag;
+    constructor(p: {
+        featureTag: IFeatureAndTag;
+        auditUser: IAuditUser;
+    }) {
+        super(FEATURE_TAG_IMPORT, p.auditUser);
+        this.data = p.featureTag;
+    }
+}
+
+export class FeatureCompletedEvent extends BaseEvent {
+    readonly featureName: string;
+    readonly data: FeatureLifecycleCompletedSchema;
+    readonly project: string;
+
+    constructor(p: {
+        project: string;
+        featureName: string;
+        data: FeatureLifecycleCompletedSchema;
+        auditUser: IAuditUser;
+    }) {
+        super(FEATURE_COMPLETED, p.auditUser);
+        const { featureName, data, project } = p;
+        this.featureName = featureName;
+        this.data = data;
+        this.project = project;
+    }
+}
+
+export class FeatureUncompletedEvent extends BaseEvent {
+    readonly featureName: string;
+    readonly project: string;
+
+    constructor(p: {
+        featureName: string;
+        auditUser: IAuditUser;
+        project: string;
+    }) {
+        super(FEATURE_UNCOMPLETED, p.auditUser);
+        const { featureName, project } = p;
+        this.featureName = featureName;
+        this.project = project;
+    }
+}
+
 export class FeatureUpdatedEvent extends BaseEvent {
     readonly data: any;
     readonly featureName: string;
     readonly project: string;
+
     constructor(eventData: {
         project: string;
         featureName: string;
@@ -628,6 +776,7 @@ export class FeatureTaggedEvent extends BaseEvent {
     readonly data: any;
     readonly featureName: string;
     readonly project: string;
+
     constructor(eventData: {
         project: string;
         featureName: string;
@@ -644,6 +793,7 @@ export class FeatureTaggedEvent extends BaseEvent {
 export class FeatureTypeUpdatedEvent extends BaseEvent {
     readonly data: any;
     readonly preData: any;
+
     constructor(eventData: {
         data: any;
         preData: any;
@@ -654,10 +804,12 @@ export class FeatureTypeUpdatedEvent extends BaseEvent {
         this.preData = eventData.preData;
     }
 }
+
 export class FeatureDependencyAddedEvent extends BaseEvent {
     readonly project: string;
     readonly featureName: string;
     readonly data: any;
+
     constructor(eventData: {
         project: string;
         featureName: string;
@@ -675,6 +827,7 @@ export class FeatureDependencyRemovedEvent extends BaseEvent {
     readonly project: string;
     readonly featureName: string;
     readonly data: any;
+
     constructor(eventData: {
         project: string;
         featureName: string;
@@ -687,6 +840,7 @@ export class FeatureDependencyRemovedEvent extends BaseEvent {
         this.data = eventData.data;
     }
 }
+
 export class FeatureDependenciesRemovedEvent extends BaseEvent {
     readonly project: string;
     readonly featureName: string;
@@ -705,6 +859,7 @@ export class FeatureDependenciesRemovedEvent extends BaseEvent {
 export class FeaturesImportedEvent extends BaseEvent {
     readonly project: string;
     readonly environment: string;
+
     constructor(eventData: {
         project: string;
         environment: string;
@@ -892,6 +1047,7 @@ export class FeatureStrategyRemoveEvent extends BaseEvent {
 export class FeatureFavoritedEvent extends BaseEvent {
     readonly featureName: string;
     readonly data: any;
+
     constructor(eventData: {
         featureName: string;
         data: any;
@@ -906,6 +1062,7 @@ export class FeatureFavoritedEvent extends BaseEvent {
 export class ProjectFavoritedEvent extends BaseEvent {
     readonly project: string;
     readonly data: any;
+
     constructor(eventData: {
         project: string;
         data: any;
@@ -920,6 +1077,7 @@ export class ProjectFavoritedEvent extends BaseEvent {
 export class FeatureUnfavoritedEvent extends BaseEvent {
     readonly featureName: string;
     readonly data: any;
+
     constructor(eventData: {
         featureName: string;
         data: any;
@@ -934,6 +1092,7 @@ export class FeatureUnfavoritedEvent extends BaseEvent {
 export class ProjectUnfavoritedEvent extends BaseEvent {
     readonly project: string;
     readonly data: any;
+
     constructor(eventData: {
         project: string;
         data: any;
@@ -1132,6 +1291,36 @@ export class ProjectAccessGroupRolesUpdated extends BaseEvent {
         this.project = project;
         this.data = data;
         this.preData = preData;
+    }
+}
+
+export class GroupUserRemoved extends BaseEvent {
+    readonly preData: any;
+    constructor(p: {
+        userId: number;
+        groupId: number;
+        auditUser: IAuditUser;
+    }) {
+        super(GROUP_USER_REMOVED, p.auditUser);
+        this.preData = {
+            groupId: p.groupId,
+            userId: p.userId,
+        };
+    }
+}
+
+export class GroupUserAdded extends BaseEvent {
+    readonly data: any;
+    constructor(p: {
+        userId: number;
+        groupId: number;
+        auditUser: IAuditUser;
+    }) {
+        super(GROUP_USER_ADDED, p.auditUser);
+        this.data = {
+            groupId: p.groupId,
+            userId: p.userId,
+        };
     }
 }
 
@@ -1367,6 +1556,7 @@ export class UserDeletedEvent extends BaseEvent {
 
 export class TagTypeCreatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1378,6 +1568,7 @@ export class TagTypeCreatedEvent extends BaseEvent {
 
 export class TagTypeDeletedEvent extends BaseEvent {
     readonly preData: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         preData: any;
@@ -1389,6 +1580,7 @@ export class TagTypeDeletedEvent extends BaseEvent {
 
 export class TagTypeUpdatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1400,6 +1592,7 @@ export class TagTypeUpdatedEvent extends BaseEvent {
 
 export class TagCreatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1411,6 +1604,7 @@ export class TagCreatedEvent extends BaseEvent {
 
 export class TagDeletedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1422,6 +1616,7 @@ export class TagDeletedEvent extends BaseEvent {
 
 export class PatCreatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1430,8 +1625,10 @@ export class PatCreatedEvent extends BaseEvent {
         this.data = eventData.data;
     }
 }
+
 export class PatDeletedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1444,6 +1641,7 @@ export class PatDeletedEvent extends BaseEvent {
 export class ProjectEnvironmentAdded extends BaseEvent {
     readonly project: string;
     readonly environment: string;
+
     constructor(eventData: {
         project: string;
         environment: string;
@@ -1458,6 +1656,7 @@ export class ProjectEnvironmentAdded extends BaseEvent {
 export class ProjectEnvironmentRemoved extends BaseEvent {
     readonly project: string;
     readonly environment: string;
+
     constructor(eventData: {
         project: string;
         environment: string;
@@ -1471,6 +1670,7 @@ export class ProjectEnvironmentRemoved extends BaseEvent {
 
 export class FeaturesExportedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1480,8 +1680,86 @@ export class FeaturesExportedEvent extends BaseEvent {
     }
 }
 
+export class DropProjectsEvent extends BaseEvent {
+    readonly data: any;
+
+    constructor(eventData: {
+        auditUser: IAuditUser;
+    }) {
+        super(DROP_PROJECTS, eventData.auditUser);
+        this.data = { name: 'all-projects' };
+    }
+}
+
+export class DropFeaturesEvent extends BaseEvent {
+    readonly data: any;
+
+    constructor(eventData: {
+        auditUser: IAuditUser;
+    }) {
+        super(DROP_FEATURES, eventData.auditUser);
+        this.data = { name: 'all-features' };
+    }
+}
+
+export class DropStrategiesEvent extends BaseEvent {
+    readonly data: any;
+
+    constructor(eventData: {
+        auditUser: IAuditUser;
+    }) {
+        super(DROP_STRATEGIES, eventData.auditUser);
+        this.data = { name: 'all-strategies' };
+    }
+}
+
+export class DropEnvironmentsEvent extends BaseEvent {
+    readonly data: any;
+
+    constructor(eventData: {
+        auditUser: IAuditUser;
+    }) {
+        super(DROP_ENVIRONMENTS, eventData.auditUser);
+        this.data = { name: 'all-environments' };
+    }
+}
+
+export class DropFeatureTagsEvent extends BaseEvent {
+    readonly data: any;
+
+    constructor(eventData: {
+        auditUser: IAuditUser;
+    }) {
+        super(DROP_FEATURE_TAGS, eventData.auditUser);
+        this.data = { name: 'all-feature-tags' };
+    }
+}
+
+export class DropTagsEvent extends BaseEvent {
+    readonly data: any;
+
+    constructor(eventData: {
+        auditUser: IAuditUser;
+    }) {
+        super(DROP_TAGS, eventData.auditUser);
+        this.data = { name: 'all-tags' };
+    }
+}
+
+export class DropTagTypesEvent extends BaseEvent {
+    readonly data: any;
+
+    constructor(eventData: {
+        auditUser: IAuditUser;
+    }) {
+        super(DROP_TAG_TYPES, eventData.auditUser);
+        this.data = { name: 'all-tag-types' };
+    }
+}
+
 export class RoleCreatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         data: any;
         auditUser: IAuditUser;
@@ -1493,6 +1771,7 @@ export class RoleCreatedEvent extends BaseEvent {
 
 export class RoleDeletedEvent extends BaseEvent {
     readonly preData: any;
+
     constructor(eventData: {
         preData: any;
         auditUser: IAuditUser;
@@ -1501,8 +1780,10 @@ export class RoleDeletedEvent extends BaseEvent {
         this.preData = eventData.preData;
     }
 }
+
 export class StrategyCreatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         data: any;
         auditUser: IAuditUser;
@@ -1511,8 +1792,10 @@ export class StrategyCreatedEvent extends BaseEvent {
         this.data = eventData.data;
     }
 }
+
 export class StrategyUpdatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         data: any;
         auditUser: IAuditUser;
@@ -1521,8 +1804,10 @@ export class StrategyUpdatedEvent extends BaseEvent {
         this.data = eventData.data;
     }
 }
+
 export class StrategyDeletedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         data: any;
         auditUser: IAuditUser;
@@ -1531,8 +1816,10 @@ export class StrategyDeletedEvent extends BaseEvent {
         this.data = eventData.data;
     }
 }
+
 export class StrategyDeprecatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         data: any;
         auditUser: IAuditUser;
@@ -1541,8 +1828,10 @@ export class StrategyDeprecatedEvent extends BaseEvent {
         this.data = eventData.data;
     }
 }
+
 export class StrategyReactivatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         data: any;
         auditUser: IAuditUser;
@@ -1557,6 +1846,7 @@ export class DefaultStrategyUpdatedEvent extends BaseEvent {
     readonly environment: string;
     readonly preData: any;
     readonly data: any;
+
     constructor(eventData: {
         project: string;
         environment: string;
@@ -1574,6 +1864,7 @@ export class DefaultStrategyUpdatedEvent extends BaseEvent {
 
 export class AddonConfigCreatedEvent extends BaseEvent {
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1586,6 +1877,7 @@ export class AddonConfigCreatedEvent extends BaseEvent {
 export class AddonConfigUpdatedEvent extends BaseEvent {
     readonly data: any;
     readonly preData: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         data: any;
@@ -1599,6 +1891,7 @@ export class AddonConfigUpdatedEvent extends BaseEvent {
 
 export class AddonConfigDeletedEvent extends BaseEvent {
     readonly preData: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         preData: any;
@@ -1611,6 +1904,7 @@ export class AddonConfigDeletedEvent extends BaseEvent {
 export class SegmentCreatedEvent extends BaseEvent {
     readonly project: string;
     readonly data: any;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         project: string;
@@ -1626,6 +1920,7 @@ export class SegmentUpdatedEvent extends BaseEvent {
     readonly data: any;
     readonly preData: any;
     readonly project: string;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         project: string;
@@ -1638,9 +1933,11 @@ export class SegmentUpdatedEvent extends BaseEvent {
         this.preData = eventData.preData;
     }
 }
+
 export class SegmentDeletedEvent extends BaseEvent {
     readonly preData: any;
     readonly project?: string;
+
     constructor(eventData: {
         auditUser: IAuditUser;
         preData: any;
@@ -1655,6 +1952,7 @@ export class SegmentDeletedEvent extends BaseEvent {
 export class GroupUpdatedEvent extends BaseEvent {
     readonly preData: any;
     readonly data: any;
+
     constructor(eventData: {
         data: any;
         preData: any;
@@ -1668,6 +1966,7 @@ export class GroupUpdatedEvent extends BaseEvent {
 
 export class GroupDeletedEvent extends BaseEvent {
     readonly preData: any;
+
     constructor(eventData: {
         preData: any;
         auditUser: IAuditUser;

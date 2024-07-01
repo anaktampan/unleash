@@ -6,7 +6,7 @@
 import type { FeatureEnvironmentMetricsSchema } from './featureEnvironmentMetricsSchema';
 
 /**
- * How many applications have seen this feature toggle, as well as how this feature was evaluated the last hour
+ * How many applications have seen this feature flag, as well as how this feature was evaluated the last hour
  */
 export interface FeatureUsageSchema {
     /** The name of the feature */
@@ -17,6 +17,9 @@ export interface FeatureUsageSchema {
     maturity: string;
     /** A list of applications seen using this feature */
     seenApplications: string[];
-    /** The version of this schema */
+    /**
+     * The version of this schema
+     * @minimum 1
+     */
     version: number;
 }

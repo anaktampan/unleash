@@ -1,7 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { mutate } from 'swr';
-import { getProjectFetcher } from 'hooks/api/getters/useProject/getProjectFetcher';
+import { useSearchParams } from 'react-router-dom';
 import useProjects from 'hooks/api/getters/useProjects/useProjects';
 import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
 import type { IProjectCard } from 'interfaces/project';
@@ -13,7 +11,7 @@ import { CREATE_PROJECT } from 'component/providers/AccessProvider/permissions';
 import Add from '@mui/icons-material/Add';
 import ApiError from 'component/common/ApiError/ApiError';
 import useUiConfig from 'hooks/api/getters/useUiConfig/useUiConfig';
-import { useMediaQuery, styled } from '@mui/material';
+import { styled, useMediaQuery } from '@mui/material';
 import theme from 'themes/theme';
 import { Search } from 'component/common/Search/Search';
 import { PremiumFeature } from 'component/common/PremiumFeature/PremiumFeature';
@@ -22,14 +20,20 @@ import { ReactComponent as ProPlanIcon } from 'assets/icons/pro-enterprise-featu
 import { ReactComponent as ProPlanIconLight } from 'assets/icons/pro-enterprise-feature-badge-light.svg';
 import { safeRegExp } from '@server/util/escape-regex';
 import { ThemeMode } from 'component/common/ThemeMode/ThemeMode';
-import { useUiFlag } from 'hooks/useUiFlag';
 import { useProfile } from 'hooks/api/getters/useProfile/useProfile';
 import { groupProjects } from './group-projects';
 import { ProjectGroup } from './ProjectGroup';
+import { CreateProjectDialog } from '../Project/CreateProject/NewCreateProjectForm/CreateProjectDialog';
 
 const StyledApiError = styled(ApiError)(({ theme }) => ({
-    maxWidth: '400px',
+    maxWidth: '500px',
     marginBottom: theme.spacing(2),
+}));
+
+const StyledContainer = styled('div')(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(4),
 }));
 
 type PageQueryType = Partial<Record<'search', string>>;
@@ -82,12 +86,42 @@ function resolveCreateButtonData(
     }
 }
 
-export const ProjectListNew = () => {
+const ProjectCreationButton = () => {
+    const [searchParams] = useSearchParams();
+    const showCreateDialog = Boolean(searchParams.get('create'));
+    const [openCreateDialog, setOpenCreateDialog] = useState(showCreateDialog);
     const { hasAccess } = useContext(AccessContext);
-    const navigate = useNavigate();
-    const { projects, loading, error, refetch } = useProjects();
-    const [fetchedProjects, setFetchedProjects] = useState<projectMap>({});
     const { isOss } = useUiConfig();
+
+    const createButtonData = resolveCreateButtonData(
+        isOss(),
+        hasAccess(CREATE_PROJECT),
+    );
+
+    return (
+        <>
+            <ResponsiveButton
+                Icon={Add}
+                endIcon={createButtonData.endIcon}
+                onClick={() => setOpenCreateDialog(true)}
+                maxWidth='700px'
+                permission={CREATE_PROJECT}
+                disabled={createButtonData.disabled}
+                tooltipProps={createButtonData.tooltip}
+                data-testid={NAVIGATE_TO_CREATE_PROJECT}
+            >
+                New project
+            </ResponsiveButton>
+            <CreateProjectDialog
+                open={openCreateDialog}
+                onClose={() => setOpenCreateDialog(false)}
+            />
+        </>
+    );
+};
+
+export const ProjectListNew = () => {
+    const { projects, loading, error, refetch } = useProjects();
 
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [searchParams, setSearchParams] = useSearchParams();
@@ -95,7 +129,6 @@ export const ProjectListNew = () => {
         searchParams.get('search') || '',
     );
 
-    const splitProjectList = useUiFlag('projectListFilterMyProjects');
     const myProjects = new Set(useProfile().profile?.projects || []);
 
     useEffect(() => {
@@ -127,32 +160,8 @@ export const ProjectListNew = () => {
     }, [projects, searchValue]);
 
     const groupedProjects = useMemo(() => {
-        if (!splitProjectList) {
-            return { myProjects: [], otherProjects: filteredProjects };
-        }
         return groupProjects(myProjects, filteredProjects);
-    }, [filteredProjects, myProjects, splitProjectList]);
-
-    const handleHover = (projectId: string) => {
-        if (fetchedProjects[projectId]) {
-            return;
-        }
-
-        const { KEY, fetcher } = getProjectFetcher(projectId);
-        mutate(KEY, fetcher);
-        setFetchedProjects((prev) => ({ ...prev, [projectId]: true }));
-    };
-
-    const createButtonData = resolveCreateButtonData(
-        isOss(),
-        hasAccess(CREATE_PROJECT),
-    );
-
-    const renderError = () => {
-        return (
-            <StyledApiError onClick={refetch} text='Error fetching projects' />
-        );
-    };
+    }, [filteredProjects, myProjects]);
 
     const projectCount =
         filteredProjects.length < projects.length
@@ -167,11 +176,11 @@ export const ProjectListNew = () => {
             <ProjectGroup
                 loading={loading}
                 searchValue={searchValue}
-                handleHover={handleHover}
                 {...props}
             />
         );
     };
+
     return (
         <PageContent
             isLoading={loading}
@@ -192,18 +201,7 @@ export const ProjectListNew = () => {
                                     </>
                                 }
                             />
-                            <ResponsiveButton
-                                Icon={Add}
-                                endIcon={createButtonData.endIcon}
-                                onClick={() => navigate('/projects/create')}
-                                maxWidth='700px'
-                                permission={CREATE_PROJECT}
-                                disabled={createButtonData.disabled}
-                                tooltipProps={createButtonData.tooltip}
-                                data-testid={NAVIGATE_TO_CREATE_PROJECT}
-                            >
-                                New project
-                            </ResponsiveButton>
+                            <ProjectCreationButton />
                         </>
                     }
                 >
@@ -219,24 +217,26 @@ export const ProjectListNew = () => {
                 </PageHeader>
             }
         >
-            <ConditionallyRender condition={error} show={renderError()} />
-            <ConditionallyRender
-                condition={splitProjectList}
-                show={
-                    <>
-                        <ProjectGroupComponent
-                            sectionTitle='My projects'
-                            projects={groupedProjects.myProjects}
+            <StyledContainer>
+                <ConditionallyRender
+                    condition={error}
+                    show={() => (
+                        <StyledApiError
+                            onClick={refetch}
+                            text='Error fetching projects'
                         />
+                    )}
+                />
+                <ProjectGroupComponent
+                    sectionTitle='My projects'
+                    projects={groupedProjects.myProjects}
+                />
 
-                        <ProjectGroupComponent
-                            sectionTitle='Other projects'
-                            projects={groupedProjects.otherProjects}
-                        />
-                    </>
-                }
-                elseShow={<ProjectGroupComponent projects={filteredProjects} />}
-            />
+                <ProjectGroupComponent
+                    sectionTitle='Other projects'
+                    projects={groupedProjects.otherProjects}
+                />
+            </StyledContainer>
         </PageContent>
     );
 };

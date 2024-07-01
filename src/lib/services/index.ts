@@ -8,7 +8,6 @@ import EventService from '../features/events/event-service';
 import HealthService from './health-service';
 
 import ProjectService from '../features/project/project-service';
-import StateService from './state-service';
 import ClientInstanceService from '../features/metrics/instance/instance-service';
 import ClientMetricsServiceV2 from '../features/metrics/client-metrics/metrics-service-v2';
 import TagTypeService from '../features/tag-type/tag-type-service';
@@ -129,6 +128,8 @@ import { JobService } from '../features/scheduler/job-service';
 import { JobStore } from '../features/scheduler/job-store';
 import { FeatureLifecycleService } from '../features/feature-lifecycle/feature-lifecycle-service';
 import { createFakeFeatureLifecycleService } from '../features/feature-lifecycle/createFeatureLifecycle';
+import { FeatureLifecycleReadModel } from '../features/feature-lifecycle/feature-lifecycle-read-model';
+import { FakeFeatureLifecycleReadModel } from '../features/feature-lifecycle/fake-feature-lifecycle-read-model';
 
 export const createServices = (
     stores: IUnleashStores,
@@ -158,6 +159,9 @@ export const createServices = (
     const dependentFeaturesReadModel = db
         ? new DependentFeaturesReadModel(db)
         : new FakeDependentFeaturesReadModel();
+    const featureLifecycleReadModel = db
+        ? new FeatureLifecycleReadModel(db, config.flagResolver)
+        : new FakeFeatureLifecycleReadModel();
     const segmentReadModel = db
         ? new SegmentReadModel(db)
         : new FakeSegmentReadModel();
@@ -175,7 +179,6 @@ export const createServices = (
         eventService,
     );
     const resetTokenService = new ResetTokenService(stores, config);
-    const stateService = new StateService(stores, config, eventService);
     const strategyService = new StrategyService(stores, config, eventService);
     const tagService = new TagService(stores, config, eventService);
     const transactionalTagTypeService = db
@@ -258,6 +261,7 @@ export const createServices = (
         privateProjectChecker,
         dependentFeaturesReadModel,
         dependentFeaturesService,
+        featureLifecycleReadModel,
     );
     const transactionalEnvironmentService = db
         ? withTransactional(createEnvironmentService(config), db)
@@ -358,9 +362,12 @@ export const createServices = (
         config.getLogger,
     );
 
-    const { featureLifecycleService } = db
-        ? createFeatureLifecycleService(db, config)
-        : createFakeFeatureLifecycleService(config);
+    const transactionalFeatureLifecycleService = db
+        ? withTransactional(createFeatureLifecycleService(config), db)
+        : withFakeTransactional(
+              createFakeFeatureLifecycleService(config).featureLifecycleService,
+          );
+    const featureLifecycleService = transactionalFeatureLifecycleService;
     featureLifecycleService.listen();
 
     return {
@@ -373,7 +380,6 @@ export const createServices = (
         featureTypeService,
         healthService,
         projectService,
-        stateService,
         strategyService,
         tagTypeService,
         transactionalTagTypeService,
@@ -423,6 +429,7 @@ export const createServices = (
         projectInsightsService,
         jobService,
         featureLifecycleService,
+        transactionalFeatureLifecycleService,
     };
 };
 
@@ -431,7 +438,6 @@ export {
     EventService,
     HealthService,
     ProjectService,
-    StateService,
     ClientInstanceService,
     ClientMetricsServiceV2,
     TagTypeService,

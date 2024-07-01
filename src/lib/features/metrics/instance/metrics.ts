@@ -1,9 +1,10 @@
 import type { Response } from 'express';
 import Controller from '../../../routes/controller';
-import type {
-    IFlagResolver,
-    IUnleashConfig,
-    IUnleashServices,
+import {
+    CLIENT_METRICS,
+    type IFlagResolver,
+    type IUnleashConfig,
+    type IUnleashServices,
 } from '../../../types';
 import type ClientInstanceService from './instance-service';
 import type { Logger } from '../../../logger';
@@ -64,7 +65,7 @@ export default class ClientMetricsController extends Controller {
                 openApiService.validPath({
                     tags: ['Client'],
                     summary: 'Register client usage metrics',
-                    description: `Registers usage metrics. Stores information about how many times each toggle was evaluated to enabled and disabled within a time frame. If provided, this operation will also store data on how many times each feature toggle's variants were displayed to the end user.`,
+                    description: `Registers usage metrics. Stores information about how many times each flag was evaluated to enabled and disabled within a time frame. If provided, this operation will also store data on how many times each feature flag's variants were displayed to the end user.`,
                     operationId: 'registerClientMetrics',
                     requestBody: createRequestSchema('clientMetricsSchema'),
                     responses: {
@@ -161,8 +162,10 @@ export default class ClientMetricsController extends Controller {
                     promises.push(
                         this.metricsV2.registerBulkMetrics(filteredData),
                     );
+                    this.config.eventBus.emit(CLIENT_METRICS, data);
                 }
                 await Promise.all(promises);
+
                 res.status(202).end();
             } catch (e) {
                 res.status(400).end();

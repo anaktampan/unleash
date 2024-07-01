@@ -7,21 +7,17 @@ In our [Ruby feature flag tutorial](/feature-flag-tutorials/ruby), we implemente
 
 We built many features into Unleash, our open-source feature flag platform, to address the complexities of releasing code. This tutorial will explore the following:
 
-- [Gradual Rollouts for Ruby Apps](#gradual-rollouts-for-ruby-apps)
-- [Canary Deployments in Ruby](#canary-deployments-in-ruby)
-  - [What is a canary deployment?](#what-is-a-canary-deployment)
-  - [How to do canary deployments with a feature flag in Ruby?](#how-to-do-canary-deployments-with-a-feature-flag-in-ruby)
-  - [Configure strategy constraints for canary deployments](#configure-strategy-constraints-for-canary-deployments)
-- [Server-side A/B Testing in Ruby](#server-side-ab-testing-in-ruby)
-- [Feature Flag Analytics and Reporting in Ruby](#feature-flag-analytics-and-reporting-in-ruby)
-  - [Enable impression data events in Ruby](#enable-impression-data-events-in-ruby)
-- [Application Metrics \& Monitoring for Ruby apps](#application-metrics--monitoring-for-ruby-apps)
-- [Feature Flag Audit Logs in Ruby](#feature-flag-audit-logs-in-ruby)
-- [Flag Automation \& Workflow Integration for Ruby Apps](#flag-automation--workflow-integration-for-ruby-apps)
-- [Common Usage Examples for Ruby Feature Flags](#common-usage-examples-for-ruby-feature-flags)
-  - [`is_enabled` example](#is_enabled-example)
-  - [`get_variant` example](#get_variant-example)
-  - [Initialization](#initialization)
+-   [Gradual Rollouts for Ruby Apps](#gradual-rollouts-for-ruby-apps)
+-   [Canary Deployments in Ruby](#canary-deployments-in-ruby)
+    -   [What is a canary deployment?](#what-is-a-canary-deployment)
+    -   [How to do canary deployments with a feature flag in Ruby?](#how-to-do-canary-deployments-with-a-feature-flag-in-ruby)
+    -   [Configure strategy constraints for canary deployments](#configure-strategy-constraints-for-canary-deployments)
+-   [Server-side A/B Testing in Ruby](#server-side-ab-testing-in-ruby)
+-   [Feature Flag Analytics and Reporting in Ruby](#feature-flag-analytics-and-reporting-in-ruby)
+    -   [Enable impression data events in Ruby](#enable-impression-data-events-in-ruby)
+-   [Application Metrics \& Monitoring for Ruby apps](#application-metrics--monitoring-for-ruby-apps)
+-   [Feature Flag Audit Logs in Ruby](#feature-flag-audit-logs-in-ruby)
+-   [Flag Automation \& Workflow Integration for Ruby Apps](#flag-automation--workflow-integration-for-ruby-apps)
 
 > Note:
 > We're using the `httpx` gem to make sending requests easier.
@@ -74,21 +70,33 @@ Learn more about [gradual rollouts in our docs](/reference/activation-strategies
 
 ### What is a canary deployment?
 
-Canary deployments are a way to test and release code in different environments for a subset of your audience.
+Canary deployments are a foundational approach for deploying new software versions with high confidence and low risk by exposing the new version to a limited audience. Canary releases are a way to test and release code in different environments for a subset of your audience, which determines which features or versions of the platform people have access to.
+
+### Why use canary deployments?
+
+Canary deployments are a safer and more gradual way to make changes in software development. They help find any abnormalities and align with the agile process for faster releases and quick reversions.
 
 ### How to do canary deployments with a feature flag in Ruby?
 
-Canary deployments help find abnormalities, and align with the agile process for faster releases. And quick reversions, if necessary.
+Feature flags provide the same benefits as canary deployments but with more granular control:
+
+-   Precisely target specific user segments for feature rollouts.
+
+-   Maintain session consistency (stickiness) if needed.
+
+-   Test multiple features independently on different user groups simultaneously.
+
+-   With feature flags, you can separate feature releases from deployments.
+
+Often, canary deployments are managed at the load balancer level while feature flags act at the application level. In some instances, rolling out groups of features together behind a feature flag can serve the purpose of a canary deployment.
 
 Unleash has a few ways to help manage canary deployments for Ruby apps at scale:
 
--   Using a [gradual rollout](/reference/activation-strategies#gradual-rollout) (which we implemented in the [previous section](#gradual-rollouts-for-ruby-apps)) would be a simple use case but would reduce the amount of control you have over who gets the new feature.
+-   Using a [gradual rollout](/reference/activation-strategies#gradual-rollout) (which we [implemented in a previous section](#gradual-rollouts-for-ruby-apps)) would be a simple use case but would reduce the amount of control you have over who gets the new feature.
 
--   [Strategy constraints](/reference/strategy-constraints) or [segments](/reference/segments) (which are a collection of constraints) to determine which user receives which version for more control than a gradual rollout.
+-   Using either [constraints](/reference/strategy-constraints) or [segments](/reference/segments) (which are a collection of constraints) for a subset of your users to get the new feature vs. the old feature, for _more_ control than a gradual rollout
 
--   [Strategy variants](/reference/strategy-variants) for more advanced use cases. For example, if you want to test 2 different versions of a feature, you can use a strategy variant to split your population of users and conduct an A/B test with them.
-
-Let’s walk through how to utilize **strategy constraints** in our Ruby app.
+-   [Strategy variants](/reference/strategy-variants) are used to do the same canary deployment, but can be scaled to more _advanced_ cases. For example, if you have 2+ new features and are testing to see if they are better than the old one, you can use variants to split your population of users and conduct an A/B test with them.
 
 ### Configure strategy constraints for canary deployments
 
@@ -221,7 +229,6 @@ Next, we can examine how Unleash can track the results and provide insights with
 
 Shipping code is one thing, but monitoring your applications is another aspect of managing code to account for. Some things to monitor could be:
 
--   Security vulnerabilities
 -   Performance metrics
 -   Tracking user behavior
 
@@ -237,11 +244,11 @@ At the flag level in Unleash, navigate to the Settings view.
 
 ![From your flag page in Unleash, you go to Settings and edit the settings for your flag called 'feature information'.](./flag-settings.png)
 
-In the Settings view, there's an edit button with pencil icon. This will take us to the ‘Edit Feature toggle’ form.
+In the Settings view, there's an edit button with pencil icon. This will take us to the ‘Edit Feature flag’ form.
 
 Turn on the impression data and then save it. Events will now be emitted every time the feature flag is triggered.
 
-![There is a toggle that turns on the impression data events in your flag form.](./enable-impression-data.png)
+![There is a flag that turns on the impression data events in your flag form.](./enable-impression-data.png)
 
 You can also use our API command to enable the impression data:
 
@@ -331,7 +338,7 @@ Read our documentation on [Event logs](/reference/event-log) and [APIs](/referen
 
 An advanced use case for leveraging feature flags at scale is automating them as part of your development workflow.
 
-It’s common for teams to have a development phase, then QA/testing, and then a production release. Our [Unleash Jira plugin](https://marketplace.atlassian.com/apps/1227377/unleash-for-jira?tab=overview&hosting=datacenter) can connect to your Jira server or cloud to create feature flags automatically during the project phases.
+It’s common for teams to have a development phase, then QA/testing, and then a production release. Our [Unleash Jira plugin](https://docs.getunleash.io/reference/integrations/jira-cloud-plugin-installation) can connect to your Jira server or cloud to create feature flags automatically during the project phases.
 
 As your code progresses through development and Jira tickets are updated, the relevant flag can turn on in a development environment. The next stage could be Canary deployments for testing with certain groups, like a QA team or beta users. The flag could be automatically turned on in QA and/or rolled out to target audiences in production.
 
@@ -398,44 +405,5 @@ Here’s how this can be done via our API:
     ```
 
     Review [API docs on archiving flags](/reference/api/unleash/archive-feature).
-
-## Common Usage Examples for Ruby Feature Flags
-
-We’ve compiled a list of the most common functions to call with our Ruby SDK.
-
-| Method                                            | Description                                       | Parameters                 | Output                         |
-| ------------------------------------------------- | ------------------------------------------------- | -------------------------- | ------------------------------ |
-| [`is_enabled`](#is_enabled-example)               | determines whether or not the flag is enabled     | feature flag name (string) | `True`, `False` (Boolean)      |
-| [`get_variant`](#get_variant-example)             | returns the flag variant that the user falls into | feature flag name (string) | flag and variant data (object) |
-| [`initialize_client`](#initialize_client-example) | starts UnleashClient                              | none                       |                                |
-
-### `is_enabled` example
-
-```ruby
-flag = client.is_enabled?("feature_flag_name")
-return flag
-
-# output
-true
-```
-
-### `get_variant` example
-
-```ruby
-variant = client.get_variant?("feature_flag_name")
-return variant
-
-# output
-{'name': 'feature_flag_name', 'weightType': 'fix', 'enabled': true, 'feature_enabled': true}
-```
-
-### Initialization
-
-```ruby
-client = Unleash::Client.new(
-    url="<your-unleash-url>",
-    app_name="APP NAME",
-    custom_http_headers:{'Authorization': '<API_TOKEN>'})
-```
 
 Learn more about different use cases in our [Ruby SDK documentation](/reference/sdks/ruby).

@@ -3,26 +3,42 @@
  * Do not edit manually.
  * See `gen:api` script in package.json
  */
+import type { FeatureSearchResponseSchemaCreatedBy } from './featureSearchResponseSchemaCreatedBy';
 import type { FeatureSearchResponseSchemaDependencyType } from './featureSearchResponseSchemaDependencyType';
 import type { FeatureSearchEnvironmentSchema } from './featureSearchEnvironmentSchema';
+import type { FeatureSearchResponseSchemaLifecycle } from './featureSearchResponseSchemaLifecycle';
 import type { FeatureSearchResponseSchemaStrategiesItem } from './featureSearchResponseSchemaStrategiesItem';
 import type { TagSchema } from './tagSchema';
 import type { VariantSchema } from './variantSchema';
 
 /**
- * A feature toggle definition
+ * A feature flag definition
  */
 export interface FeatureSearchResponseSchema {
     /** `true` if the feature is archived */
     archived?: boolean;
-    /** The date the feature was archived */
+    /**
+     * The date the feature was archived
+     * @nullable
+     */
     archivedAt?: string | null;
-    /** The date the feature was created */
+    /**
+     * The date the feature was created
+     * @nullable
+     */
     createdAt: string | null;
-    /** The type of dependency. 'parent' means that the feature is a parent feature, 'child' means that the feature is a child feature. */
+    /** User who created the feature flag */
+    createdBy: FeatureSearchResponseSchemaCreatedBy;
+    /**
+     * The type of dependency. 'parent' means that the feature is a parent feature, 'child' means that the feature is a child feature.
+     * @nullable
+     */
     dependencyType: FeatureSearchResponseSchemaDependencyType;
-    /** Detailed description of the feature */
-    description?: string | null;
+    /**
+     * Detailed description of the feature
+     * @nullable
+     */
+    description: string | null;
     /** The list of environments where the feature can be used */
     environments: FeatureSearchEnvironmentSchema[];
     /** `true` if the feature was favorited, otherwise `false`. */
@@ -30,10 +46,13 @@ export interface FeatureSearchResponseSchema {
     /** `true` if the impression data collection is enabled for the feature, otherwise `false`. */
     impressionData: boolean;
     /**
-     * The date when metrics where last collected for the feature. This field is deprecated, use the one in featureEnvironmentSchema
+     * The date when metrics where last collected for the feature. This field was deprecated in v5 and will be removed in a future release, use the one in featureEnvironmentSchema
      * @deprecated
+     * @nullable
      */
     lastSeenAt?: string | null;
+    /** Current lifecycle stage of the feature */
+    lifecycle?: FeatureSearchResponseSchemaLifecycle;
     /** Unique feature name */
     name: string;
     /** Name of the project the feature belongs to */
@@ -43,16 +62,19 @@ export interface FeatureSearchResponseSchema {
     /** `true` if the feature is stale based on the age and feature type, otherwise `false`. */
     stale: boolean;
     /**
-     * This is a legacy field that will be deprecated
+     * This is a legacy field that was deprecated in v5
      * @deprecated
      */
     strategies?: FeatureSearchResponseSchemaStrategiesItem[];
-    /** The list of feature tags */
+    /**
+     * The list of feature tags
+     * @nullable
+     */
     tags?: TagSchema[] | null;
-    /** Type of the toggle e.g. experiment, kill-switch, release, operational, permission */
+    /** Type of the flag e.g. experiment, kill-switch, release, operational, permission */
     type: string;
     /**
-     * The list of feature variants
+     * The list of feature variants. This field was deprecated in v5
      * @deprecated
      */
     variants?: VariantSchema[];

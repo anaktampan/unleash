@@ -61,6 +61,11 @@ export interface FeatureToggleDTO {
     impressionData?: boolean;
     variants?: IVariant[];
     createdByUserId?: number;
+    createdBy?: {
+        id: number;
+        name: string;
+        imageUrl: string;
+    };
 }
 
 export interface FeatureToggle extends FeatureToggleDTO {
@@ -103,10 +108,10 @@ export interface FeatureToggleWithEnvironment extends FeatureToggle {
     environments: IEnvironmentDetail[];
 }
 
-export interface FeatureToggleWithDependencies
-    extends FeatureToggleWithEnvironment {
+export interface FeatureToggleView extends FeatureToggleWithEnvironment {
     dependencies: IDependency[];
     children: string[];
+    lifecycle: IFeatureLifecycleStage | undefined;
 }
 
 // @deprecated
@@ -152,6 +157,25 @@ export interface IDependency {
     variants?: string[];
     enabled?: boolean;
 }
+
+export type StageName =
+    | 'initial'
+    | 'pre-live'
+    | 'live'
+    | 'completed'
+    | 'archived';
+
+export interface IFeatureLifecycleStage {
+    stage: StageName;
+    enteredStageAt: Date;
+    status?: string;
+}
+
+export type IProjectLifecycleStageDuration = {
+    duration: number;
+    project: string;
+    stage: StageName;
+};
 
 export interface IFeatureDependency {
     feature: string;
@@ -203,6 +227,8 @@ export interface IEnvironmentOverview extends IEnvironmentBase {
     variantCount: number;
     hasStrategies?: boolean;
     hasEnabledStrategies?: boolean;
+    yes?: number;
+    no?: number;
 }
 
 export interface IFeatureOverview {
@@ -217,6 +243,7 @@ export interface IFeatureOverview {
     createdAt: Date;
     lastSeenAt: Date;
     environments: IEnvironmentOverview[];
+    lifecycle?: IFeatureLifecycleStage;
 }
 
 export type IFeatureSearchOverview = Exclude<
@@ -225,6 +252,11 @@ export type IFeatureSearchOverview = Exclude<
 > & {
     dependencyType: 'parent' | 'child' | null;
     environments: FeatureSearchEnvironmentSchema[];
+    createdBy: {
+        id: number;
+        name: string;
+        imageUrl: string;
+    };
 };
 
 export interface IFeatureTypeCount {
@@ -450,28 +482,15 @@ export interface IMetricsBucket {
     toggles: { [key: string]: IMetricCounts };
 }
 
-export interface IImportFile extends ImportCommon {
-    file: string;
-}
-
-interface ImportCommon {
-    dropBeforeImport?: boolean;
-    keepExisting?: boolean;
-    userName?: string;
-    userId: number;
-}
-
-export interface IImportData extends ImportCommon {
-    data: any;
-}
-
 // Create project aligns with #/components/schemas/createProjectSchema
 // joi is providing default values when the optional inputs are not provided
 // const data = await projectSchema.validateAsync(newProject);
-export type CreateProject = Pick<IProject, 'id' | 'name'> & {
+export type CreateProject = Pick<IProject, 'name'> & {
+    id?: string;
     mode?: ProjectMode;
     defaultStickiness?: string;
     environments?: string[];
+    changeRequestEnvironments?: { name: string; requiredApprovals?: number }[];
 };
 
 // Create project aligns with #/components/schemas/projectCreatedSchema
@@ -485,6 +504,7 @@ export type ProjectCreated = Pick<
     | 'featureLimit'
 > & {
     environments: string[];
+    changeRequestEnvironments?: { name: string; requiredApprovals: number }[];
 };
 
 export interface IProject {

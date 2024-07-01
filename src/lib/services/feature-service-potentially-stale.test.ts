@@ -1,6 +1,6 @@
 import {
     FEATURE_POTENTIALLY_STALE_ON,
-    type IEvent,
+    type IBaseEvent,
     type IUnleashConfig,
     type IUnleashStores,
 } from '../types';
@@ -14,6 +14,7 @@ import type { IDependentFeaturesReadModel } from '../features/dependent-features
 import EventService from '../features/events/event-service';
 import FakeFeatureTagStore from '../../test/fixtures/fake-feature-tag-store';
 import type { DependentFeaturesService } from '../features/dependent-features/dependent-features-service';
+import type { IFeatureLifecycleReadModel } from '../features/feature-lifecycle/feature-lifecycle-read-model-type';
 
 test('Should only store events for potentially stale on', async () => {
     expect.assertions(2);
@@ -27,7 +28,7 @@ test('Should only store events for potentially stale on', async () => {
         {
             // @ts-expect-error
             eventStore: {
-                batchStore: async (events: IEvent[]) => {
+                batchStore: async (events: IBaseEvent[]) => {
                     expect(events.length).toBe(1);
                     const [event1] = events;
 
@@ -66,6 +67,7 @@ test('Should only store events for potentially stale on', async () => {
         {} as IPrivateProjectChecker,
         {} as IDependentFeaturesReadModel,
         {} as DependentFeaturesService,
+        {} as IFeatureLifecycleReadModel,
     );
 
     await featureToggleService.updatePotentiallyStaleFeatures();

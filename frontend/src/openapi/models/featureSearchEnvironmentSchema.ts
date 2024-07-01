@@ -20,22 +20,31 @@ export interface FeatureSearchEnvironmentSchema {
     hasEnabledStrategies?: boolean;
     /** Whether the feature has any strategies defined. */
     hasStrategies?: boolean;
-    /** The date when metrics where last collected for the feature environment */
+    /**
+     * The date when metrics where last collected for the feature environment
+     * @nullable
+     */
     lastSeenAt?: string | null;
     /** The name of the environment */
     name: string;
-    /** How many times the toggle evaluated to false in last hour bucket */
+    /**
+     * How many times the toggle evaluated to false in last hour bucket
+     * @minimum 0
+     */
     no?: number;
     /** The sort order of the feature environment in the feature environments list */
     sortOrder?: number;
     /** A list of activation strategies for the feature environment */
     strategies?: FeatureStrategySchema[];
     /** The type of the environment */
-    type?: string;
+    type: string;
     /** The number of defined variants */
     variantCount?: number;
     /** A list of variants for the feature environment */
     variants?: VariantSchema[];
-    /** How many times the toggle evaluated to true in last hour bucket */
+    /**
+     * How many times the toggle evaluated to true in last hour bucket
+     * @minimum 0
+     */
     yes?: number;
 }

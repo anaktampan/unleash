@@ -10,6 +10,7 @@ import {
     Box,
     Divider,
     Typography,
+    Link,
 } from '@mui/material';
 import type {
     IFeatureStrategy,
@@ -42,7 +43,7 @@ import { useHasProjectEnvironmentAccess } from 'hooks/useHasAccess';
 import { FeatureStrategyTitle } from './FeatureStrategyTitle/FeatureStrategyTitle';
 import { FeatureStrategyEnabledDisabled } from './FeatureStrategyEnabledDisabled/FeatureStrategyEnabledDisabled';
 import { usePlausibleTracker } from 'hooks/usePlausibleTracker';
-import { formatStrategyName } from 'utils/strategyNames';
+import { BuiltInStrategies, formatStrategyName } from 'utils/strategyNames';
 import { Badge } from 'component/common/Badge/Badge';
 import EnvironmentIcon from 'component/common/EnvironmentIcon/EnvironmentIcon';
 
@@ -86,7 +87,7 @@ const StyledForm = styled('form')(({ theme }) => ({
     flexDirection: 'column',
     gap: theme.spacing(2),
     padding: theme.spacing(6),
-    paddingBottom: theme.spacing(12),
+    paddingBottom: theme.spacing(16),
     paddingTop: theme.spacing(4),
     overflow: 'auto',
     height: '100%',
@@ -106,9 +107,11 @@ const StyledButtons = styled('div')(({ theme }) => ({
     left: 0,
     position: 'absolute',
     display: 'flex',
-    padding: theme.spacing(3),
+    gap: theme.spacing(1),
+    paddingTop: theme.spacing(3),
     paddingRight: theme.spacing(6),
     paddingLeft: theme.spacing(6),
+    paddingBottom: theme.spacing(6),
     backgroundColor: theme.palette.background.paper,
     justifyContent: 'end',
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -389,32 +392,39 @@ export const FeatureStrategyForm = ({
                         />
                     }
                 />
-                <FeatureStrategyEnabled
-                    projectId={feature.project}
-                    featureId={feature.name}
-                    environmentId={environmentId}
-                >
-                    <ConditionallyRender
-                        condition={Boolean(isChangeRequest)}
-                        show={
-                            <Alert severity='success'>
-                                This feature toggle is currently enabled in the{' '}
-                                <strong>{environmentId}</strong> environment.
-                                Any changes made here will be available to users
-                                as soon as these changes are approved and
-                                applied.
-                            </Alert>
-                        }
-                        elseShow={
-                            <Alert severity='success'>
-                                This feature toggle is currently enabled in the{' '}
-                                <strong>{environmentId}</strong> environment.
-                                Any changes made here will be available to users
-                                as soon as you hit <strong>save</strong>.
-                            </Alert>
-                        }
-                    />
-                </FeatureStrategyEnabled>
+
+                <ConditionallyRender
+                    condition={
+                        !BuiltInStrategies.includes(strategy.name || 'default')
+                    }
+                    show={
+                        <Alert severity='warning'>
+                            Custom strategies are deprecated. We recommend not
+                            adding them to any flags going forward and using the
+                            predefined strategies like Gradual rollout with{' '}
+                            <Link
+                                href={
+                                    'https://docs.getunleash.io/reference/strategy-constraints'
+                                }
+                                target='_blank'
+                                variant='body2'
+                            >
+                                constraints
+                            </Link>{' '}
+                            instead.
+                        </Alert>
+                    }
+                />
+                <ConditionallyRender
+                    condition={!isChangeRequest}
+                    show={
+                        <FeatureStrategyEnabled
+                            projectId={feature.project}
+                            featureId={feature.name}
+                            environmentId={environmentId}
+                        />
+                    }
+                />
             </StyledAlertBox>
 
             <StyledTabs value={tab} onChange={handleChange}>

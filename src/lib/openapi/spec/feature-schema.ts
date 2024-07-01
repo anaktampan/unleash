@@ -13,7 +13,7 @@ export const featureSchema = {
     type: 'object',
     additionalProperties: false,
     required: ['name'],
-    description: 'A feature toggle definition',
+    description: 'A feature flag definition',
     properties: {
         name: {
             type: 'string',
@@ -24,7 +24,7 @@ export const featureSchema = {
             type: 'string',
             example: 'kill-switch',
             description:
-                'Type of the toggle e.g. experiment, kill-switch, release, operational, permission',
+                'Type of the flag e.g. experiment, kill-switch, release, operational, permission',
         },
         description: {
             type: 'string',
@@ -73,6 +73,29 @@ export const featureSchema = {
             example: '2023-01-28T15:21:39.975Z',
             description: 'The date the feature was created',
         },
+        createdBy: {
+            type: 'object',
+            description: 'User who created the feature flag',
+            additionalProperties: false,
+            required: ['id', 'name', 'imageUrl'],
+            properties: {
+                id: {
+                    description: 'The user id',
+                    type: 'integer',
+                    example: 123,
+                },
+                name: {
+                    description: 'Name of the user',
+                    type: 'string',
+                    example: 'User',
+                },
+                imageUrl: {
+                    description: `URL used for the user profile image`,
+                    type: 'string',
+                    example: 'https://example.com/242x200.png',
+                },
+            },
+        },
         archivedAt: {
             type: 'string',
             format: 'date-time',
@@ -87,7 +110,7 @@ export const featureSchema = {
             deprecated: true,
             example: '2023-01-28T16:21:39.975Z',
             description:
-                'The date when metrics where last collected for the feature. This field is deprecated, use the one in featureEnvironmentSchema',
+                'The date when metrics where last collected for the feature. This field was deprecated in v5, use the one in featureEnvironmentSchema',
         },
         environments: {
             type: 'array',
@@ -110,7 +133,8 @@ export const featureSchema = {
             items: {
                 type: 'object',
             },
-            description: 'This is a legacy field that will be deprecated',
+            description:
+                'This was deprecated in v5 and will be removed in a future major version',
             deprecated: true,
         },
         tags: {
@@ -128,6 +152,32 @@ export const featureSchema = {
             items: {
                 type: 'string',
                 example: 'some-feature',
+            },
+        },
+        lifecycle: {
+            type: 'object',
+            description: 'Current lifecycle stage of the feature',
+            additionalProperties: false,
+            required: ['stage', 'enteredStageAt'],
+            properties: {
+                stage: {
+                    description: 'The name of the current lifecycle stage',
+                    type: 'string',
+                    enum: [
+                        'initial',
+                        'pre-live',
+                        'live',
+                        'completed',
+                        'archived',
+                    ],
+                    example: 'initial',
+                },
+                enteredStageAt: {
+                    description: 'When the feature entered this stage',
+                    type: 'string',
+                    format: 'date-time',
+                    example: '2023-01-28T15:21:39.975Z',
+                },
             },
         },
         dependencies: {

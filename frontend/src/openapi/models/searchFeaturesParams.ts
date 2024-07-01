@@ -18,9 +18,13 @@ export type SearchFeaturesParams = {
      */
     state?: string;
     /**
-     * The list of feature types to filter by
+     * The feature flag type to filter by. The type can be specified with an operator. The supported operators are IS, IS_NOT, IS_ANY_OF, IS_NONE_OF.
      */
-    type?: string[];
+    type?: string;
+    /**
+     * The feature flag creator to filter by. The creators can be specified with an operator. The supported operators are IS, IS_NOT, IS_ANY_OF, IS_NONE_OF.
+     */
+    createdBy?: string;
     /**
      * The list of feature tags to filter by. Feature tag has to specify a type and a value joined with a colon.
      */

@@ -43,6 +43,12 @@ import FakeFeatureSearchStore from '../../lib/features/feature-search/fake-featu
 import { FakeInactiveUsersStore } from '../../lib/users/inactive/fakes/fake-inactive-users-store';
 import { FakeTrafficDataUsageStore } from '../../lib/features/traffic-data-usage/fake-traffic-data-usage-store';
 import { FakeSegmentReadModel } from '../../lib/features/segment/fake-segment-read-model';
+import { FakeProjectOwnersReadModel } from '../../lib/features/project/fake-project-owners-read-model';
+import { FakeFeatureLifecycleStore } from '../../lib/features/feature-lifecycle/fake-feature-lifecycle-store';
+import { FakeProjectFlagCreatorsReadModel } from '../../lib/features/project/fake-project-flag-creators-read-model';
+import { FakeFeatureStrategiesReadModel } from '../../lib/features/feature-toggle/fake-feature-strategies-read-model';
+import { FakeFeatureLifecycleReadModel } from '../../lib/features/feature-lifecycle/fake-feature-lifecycle-read-model';
+import { FakeLargestResourcesReadModel } from '../../lib/features/metrics/sizes/fake-largest-resources-read-model';
 
 const db = {
     select: () => ({
@@ -95,6 +101,12 @@ const createStores: () => IUnleashStores = () => {
         inactiveUsersStore: new FakeInactiveUsersStore(),
         trafficDataUsageStore: new FakeTrafficDataUsageStore(),
         segmentReadModel: new FakeSegmentReadModel(),
+        projectOwnersReadModel: new FakeProjectOwnersReadModel(),
+        projectFlagCreatorsReadModel: new FakeProjectFlagCreatorsReadModel(),
+        featureLifecycleStore: new FakeFeatureLifecycleStore(),
+        featureStrategiesReadModel: new FakeFeatureStrategiesReadModel(),
+        featureLifecycleReadModel: new FakeFeatureLifecycleReadModel(),
+        largestResourcesReadModel: new FakeLargestResourcesReadModel(),
     };
 };
 

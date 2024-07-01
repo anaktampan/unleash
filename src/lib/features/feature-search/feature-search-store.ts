@@ -4,9 +4,9 @@ import metricsHelper from '../../util/metrics-helper';
 import { DB_TIME } from '../../metric-events';
 import type { Logger, LogProvider } from '../../logger';
 import type {
-    IFeatureOverview,
     IFeatureSearchOverview,
     IFeatureSearchStore,
+    IFlagResolver,
     ITag,
 } from '../../types';
 import FeatureToggleStore from '../feature-toggle/feature-toggle-store';
@@ -18,9 +18,10 @@ import type {
 } from '../feature-toggle/types/feature-toggle-strategies-store-type';
 import { applyGenericQueryParams, applySearchFilters } from './search-utils';
 import type { FeatureSearchEnvironmentSchema } from '../../openapi/spec/feature-search-environment-schema';
+import { generateImageUrl } from '../../util';
 
-const sortEnvironments = (overview: IFeatureOverview[]) => {
-    return overview.map((data: IFeatureOverview) => ({
+const sortEnvironments = (overview: IFeatureSearchOverview[]) => {
+    return overview.map((data: IFeatureSearchOverview) => ({
         ...data,
         environments: data.environments
             .filter((f) => f.name)
@@ -40,9 +41,17 @@ class FeatureSearchStore implements IFeatureSearchStore {
 
     private readonly timer: Function;
 
-    constructor(db: Db, eventBus: EventEmitter, getLogger: LogProvider) {
+    private flagResolver: IFlagResolver;
+
+    constructor(
+        db: Db,
+        eventBus: EventEmitter,
+        getLogger: LogProvider,
+        flagResolver: IFlagResolver,
+    ) {
         this.db = db;
         this.logger = getLogger('feature-search-store.ts');
+        this.flagResolver = flagResolver;
         this.timer = (action) =>
             metricsHelper.wrapTimer(eventBus, DB_TIME, {
                 store: 'feature-search',
@@ -65,11 +74,28 @@ class FeatureSearchStore implements IFeatureSearchStore {
         };
     }
 
+    private getLatestLifecycleStageQuery() {
+        return this.db('feature_lifecycles')
+            .select(
+                'feature as stage_feature',
+                'stage as latest_stage',
+                'status as stage_status',
+                'created_at as entered_stage_at',
+            )
+            .distinctOn('stage_feature')
+            .orderBy([
+                'stage_feature',
+                {
+                    column: 'entered_stage_at',
+                    order: 'desc',
+                },
+            ]);
+    }
+
     async searchFeatures(
         {
             userId,
             searchParams,
-            type,
             status,
             offset,
             limit,
@@ -79,12 +105,15 @@ class FeatureSearchStore implements IFeatureSearchStore {
         }: IFeatureSearchParams,
         queryParams: IQueryParam[],
     ): Promise<{
-        features: IFeatureOverview[];
+        features: IFeatureSearchOverview[];
         total: number;
     }> {
         const stopTimer = this.timer('searchFeatures');
         const validatedSortOrder =
             sortOrder === 'asc' || sortOrder === 'desc' ? sortOrder : 'asc';
+
+        const featureLifecycleEnabled =
+            this.flagResolver.isEnabled('featureLifecycle');
 
         const finalQuery = this.db
             .with('ranked_features', (query) => {
@@ -107,8 +136,11 @@ class FeatureSearchStore implements IFeatureSearchStore {
                     'ft.tag_value as tag_value',
                     'ft.tag_type as tag_type',
                     'segments.name as segment_name',
-                    'client_metrics_env.yes as yes',
-                    'client_metrics_env.no as no',
+                    'users.id as user_id',
+                    'users.name as user_name',
+                    'users.username as user_username',
+                    'users.email as user_email',
+                    'users.image_url as user_image_url',
                 ] as (string | Raw<any> | Knex.QueryBuilder)[];
 
                 const lastSeenQuery = 'last_seen_at_metrics.last_seen_at';
@@ -131,12 +163,6 @@ class FeatureSearchStore implements IFeatureSearchStore {
 
                 selectColumns = [
                     ...selectColumns,
-                    this.db.raw(
-                        'EXISTS (SELECT 1 FROM feature_strategies WHERE feature_strategies.feature_name = features.name AND feature_strategies.environment = feature_environments.environment) as has_strategies',
-                    ),
-                    this.db.raw(
-                        'EXISTS (SELECT 1 FROM feature_strategies WHERE feature_strategies.feature_name = features.name AND feature_strategies.environment = feature_environments.environment AND (feature_strategies.disabled IS NULL OR feature_strategies.disabled = false)) as has_enabled_strategies',
-                    ),
                     this.db.raw(`CASE
                             WHEN dependent_features.parent = features.name THEN 'parent'
                             WHEN dependent_features.child = features.name THEN 'child'
@@ -150,10 +176,6 @@ class FeatureSearchStore implements IFeatureSearchStore {
                     'features.description',
                 ]);
 
-                if (type) {
-                    query.whereIn('features.type', type);
-                }
-
                 if (status && status.length > 0) {
                     query.where((builder) => {
                         for (const [envName, envStatus] of status) {
@@ -163,7 +185,7 @@ class FeatureSearchStore implements IFeatureSearchStore {
                                     envName,
                                 ).andWhere(
                                     'feature_environments.enabled',
-                                    envStatus === 'enabled' ? true : false,
+                                    envStatus === 'enabled',
                                 );
                             });
                         }
@@ -213,23 +235,11 @@ class FeatureSearchStore implements IFeatureSearchStore {
                             'features.name',
                         );
                     })
-                    .leftJoin('client_metrics_env', (qb) => {
-                        qb.on(
-                            'client_metrics_env.environment',
-                            '=',
-                            'environments.name',
-                        )
-                            .andOn(
-                                'client_metrics_env.feature_name',
-                                '=',
-                                'features.name',
-                            )
-                            .andOn(
-                                'client_metrics_env.timestamp',
-                                '>=',
-                                this.db.raw("NOW() - INTERVAL '1 hour'"),
-                            );
-                    });
+                    .leftJoin(
+                        'users',
+                        'users.id',
+                        'features.created_by_user_id',
+                    );
 
                 query.leftJoin('last_seen_at_metrics', function () {
                     this.on(
@@ -254,6 +264,7 @@ class FeatureSearchStore implements IFeatureSearchStore {
                     .select(selectColumns)
                     .denseRank('rank', this.db.raw(rankingSql));
             })
+            .with('lifecycle', this.getLatestLifecycleStageQuery())
             .with(
                 'final_ranks',
                 this.db.raw(
@@ -264,7 +275,37 @@ class FeatureSearchStore implements IFeatureSearchStore {
                 'total_features',
                 this.db.raw('select count(*) as total from final_ranks'),
             )
-            .select('*')
+            .with('metrics', (queryBuilder) => {
+                queryBuilder
+                    .sum('yes as yes')
+                    .sum('no as no')
+                    .select([
+                        'client_metrics_env.environment as metric_environment',
+                        'client_metrics_env.feature_name as metric_feature_name',
+                    ])
+                    .from('client_metrics_env')
+                    .innerJoin(
+                        'final_ranks',
+                        'client_metrics_env.feature_name',
+                        'final_ranks.feature_name',
+                    )
+                    .where(
+                        'client_metrics_env.timestamp',
+                        '>=',
+                        this.db.raw("NOW() - INTERVAL '1 hour'"),
+                    )
+                    .groupBy([
+                        'client_metrics_env.feature_name',
+                        'client_metrics_env.environment',
+                    ]);
+            })
+            .select([
+                'ranked_features.*',
+                'total_features.total',
+                'final_ranks.final_rank',
+                'metrics.yes',
+                'metrics.no',
+            ])
             .from('ranked_features')
             .innerJoin(
                 'final_ranks',
@@ -272,12 +313,32 @@ class FeatureSearchStore implements IFeatureSearchStore {
                 'final_ranks.feature_name',
             )
             .joinRaw('CROSS JOIN total_features')
-            .whereBetween('final_rank', [offset + 1, offset + limit]);
+            .whereBetween('final_rank', [offset + 1, offset + limit])
+            .orderBy('final_rank');
+        if (featureLifecycleEnabled) {
+            finalQuery
+                .select(
+                    'lifecycle.latest_stage',
+                    'lifecycle.stage_status',
+                    'lifecycle.entered_stage_at',
+                )
+                .leftJoin(
+                    'lifecycle',
+                    'ranked_features.feature_name',
+                    'lifecycle.stage_feature',
+                );
+        }
+        this.queryExtraData(finalQuery);
         const rows = await finalQuery;
         stopTimer();
         if (rows.length > 0) {
-            const overview = this.getAggregatedSearchData(rows);
-            const features = sortEnvironments(overview);
+            const overview = this.getAggregatedSearchData(
+                rows,
+                featureLifecycleEnabled,
+            );
+            const features = sortEnvironments(
+                overview,
+            ) as IFeatureSearchOverview[];
             return {
                 features,
                 total: Number(rows[0].total) || 0,
@@ -288,6 +349,74 @@ class FeatureSearchStore implements IFeatureSearchStore {
             features: [],
             total: 0,
         };
+    }
+    /*
+        This is noncritical data that can should be joined after paging and is not part of filtering/sorting
+     */
+    private queryExtraData(queryBuilder: Knex.QueryBuilder) {
+        this.queryMetrics(queryBuilder);
+        this.queryStrategiesByEnvironment(queryBuilder);
+    }
+
+    private queryMetrics(queryBuilder: Knex.QueryBuilder) {
+        queryBuilder.leftJoin('metrics', (qb) => {
+            qb.on(
+                'metric_environment',
+                '=',
+                'ranked_features.environment',
+            ).andOn('metric_feature_name', '=', 'ranked_features.feature_name');
+        });
+    }
+
+    private queryStrategiesByEnvironment(queryBuilder: Knex.QueryBuilder) {
+        queryBuilder.select(
+            this.db.raw(
+                'has_strategies.feature_name IS NOT NULL AS has_strategies',
+            ),
+            this.db.raw(
+                'enabled_strategies.feature_name IS NOT NULL AS has_enabled_strategies',
+            ),
+        );
+        queryBuilder
+            .leftJoin(
+                this.db
+                    .select('feature_name', 'environment')
+                    .from('feature_strategies')
+                    .groupBy('feature_name', 'environment')
+                    .where(function () {
+                        this.whereNull('disabled').orWhere('disabled', false);
+                    })
+                    .as('enabled_strategies'),
+                function () {
+                    this.on(
+                        'enabled_strategies.feature_name',
+                        '=',
+                        'ranked_features.feature_name',
+                    ).andOn(
+                        'enabled_strategies.environment',
+                        '=',
+                        'ranked_features.environment',
+                    );
+                },
+            )
+            .leftJoin(
+                this.db
+                    .select('feature_name', 'environment')
+                    .from('feature_strategies')
+                    .groupBy('feature_name', 'environment')
+                    .as('has_strategies'),
+                function () {
+                    this.on(
+                        'has_strategies.feature_name',
+                        '=',
+                        'ranked_features.feature_name',
+                    ).andOn(
+                        'has_strategies.environment',
+                        '=',
+                        'ranked_features.environment',
+                    );
+                },
+            );
     }
 
     private buildRankingSql(
@@ -332,7 +461,10 @@ class FeatureSearchStore implements IFeatureSearchStore {
         return rankingSql;
     }
 
-    getAggregatedSearchData(rows): IFeatureSearchOverview[] {
+    getAggregatedSearchData(
+        rows,
+        featureLifecycleEnabled: boolean,
+    ): IFeatureSearchOverview[] {
         const entriesMap: Map<string, IFeatureSearchOverview> = new Map();
         const orderedEntries: IFeatureSearchOverview[] = [];
 
@@ -341,6 +473,11 @@ class FeatureSearchStore implements IFeatureSearchStore {
 
             if (!entry) {
                 // Create a new entry
+                const name =
+                    row.user_name ||
+                    row.user_username ||
+                    row.user_email ||
+                    'unknown';
                 entry = {
                     type: row.type,
                     description: row.description,
@@ -354,7 +491,27 @@ class FeatureSearchStore implements IFeatureSearchStore {
                     dependencyType: row.dependency,
                     environments: [],
                     segments: row.segment_name ? [row.segment_name] : [],
+                    createdBy: {
+                        id: Number(row.user_id),
+                        name: name,
+                        imageUrl: generateImageUrl({
+                            id: row.user_id,
+                            email: row.user_email,
+                            username: name,
+                        }),
+                    },
                 };
+                if (featureLifecycleEnabled) {
+                    entry.lifecycle = row.latest_stage
+                        ? {
+                              stage: row.latest_stage,
+                              ...(row.stage_status
+                                  ? { status: row.stage_status }
+                                  : {}),
+                              enteredStageAt: row.entered_stage_at,
+                          }
+                        : undefined;
+                }
                 entriesMap.set(row.feature_name, entry);
                 orderedEntries.push(entry);
             }

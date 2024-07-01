@@ -18,7 +18,14 @@ let db: ITestDb;
 
 beforeAll(async () => {
     db = await dbInit('feature_strategy_auth_api_serial', getLogger);
-    app = await setupAppWithAuth(db.stores);
+    app = await setupAppWithAuth(db.stores, {
+        experimental: {
+            flags: {
+                strictSchemaValidation: true,
+                anonymiseEventLog: true,
+            },
+        },
+    });
 });
 
 afterEach(async () => {
@@ -41,10 +48,10 @@ afterAll(async () => {
     await db.destroy();
 });
 
-test('Should not be possible to update feature toggle without permission', async () => {
+test('Should not be possible to update feature flag without permission', async () => {
     const email = 'user@mail.com';
     const url = '/api/admin/projects/default/features';
-    const name = 'auth.toggle.update';
+    const name = 'auth.flag.update';
 
     await db.stores.featureToggleStore.create('default', {
         name,
@@ -69,10 +76,10 @@ test('Should not be possible to update feature toggle without permission', async
         .expect(403);
 });
 
-test('Should be possible to update feature toggle with permission', async () => {
+test('Should be possible to update feature flag with permission', async () => {
     const email = 'user2@mail.com';
     const url = '/api/admin/projects/default/features';
-    const name = 'auth.toggle.update2';
+    const name = 'auth.flag.update2';
 
     await db.stores.featureToggleStore.create('default', {
         name,
@@ -97,10 +104,10 @@ test('Should be possible to update feature toggle with permission', async () => 
         .expect(200);
 });
 
-test('Should not be possible auto-enable feature toggle without CREATE_FEATURE_STRATEGY permission', async () => {
+test('Should not be possible auto-enable feature flag without CREATE_FEATURE_STRATEGY permission', async () => {
     const email = 'user33@mail.com';
     const url = '/api/admin/projects/default/features';
-    const name = 'auth.toggle.enable';
+    const name = 'auth.flag.enable';
 
     await app.services.featureToggleServiceV2.createFeatureToggle(
         'default',
@@ -131,4 +138,38 @@ test('Should not be possible auto-enable feature toggle without CREATE_FEATURE_S
     await app.request
         .post(`${url}/${name}/environments/default/on`)
         .expect(403);
+});
+
+test('Should read flag creator', async () => {
+    const email = 'user@getunleash.io';
+    const url = '/api/admin/projects/default/features/';
+    const name = 'creator.flag';
+
+    const user = await app.services.userService.createUser(
+        {
+            email,
+            rootRole: RoleName.EDITOR,
+        },
+        TEST_AUDIT_USER,
+    );
+
+    await db.stores.featureToggleStore.create('default', {
+        name,
+        createdByUserId: user.id,
+    });
+
+    await app.request.post('/auth/demo/login').send({
+        email,
+    });
+
+    const { body: feature } = await app.request
+        .get(`${url}/${name}`)
+        .expect(200);
+
+    expect(feature.createdBy).toEqual({
+        id: user.id,
+        name: '3957b71c0@unleash.run',
+        imageUrl:
+            'https://gravatar.com/avatar/3957b71c0a6d2528f03b423f432ed2efe855d263400f960248a1080493d9d68a?s=42&d=retro&r=g',
+    });
 });

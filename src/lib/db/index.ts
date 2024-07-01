@@ -43,6 +43,12 @@ import FeatureSearchStore from '../features/feature-search/feature-search-store'
 import { InactiveUsersStore } from '../users/inactive/inactive-users-store';
 import { TrafficDataUsageStore } from '../features/traffic-data-usage/traffic-data-usage-store';
 import { SegmentReadModel } from '../features/segment/segment-read-model';
+import { ProjectOwnersReadModel } from '../features/project/project-owners-read-model';
+import { FeatureLifecycleStore } from '../features/feature-lifecycle/feature-lifecycle-store';
+import { ProjectFlagCreatorsReadModel } from '../features/project/project-flag-creators-read-model';
+import { FeatureStrategiesReadModel } from '../features/feature-toggle/feature-strategies-read-model';
+import { FeatureLifecycleReadModel } from '../features/feature-lifecycle/feature-lifecycle-read-model';
+import { LargestResourcesReadModel } from '../features/metrics/sizes/largest-resources-read-model';
 
 export const createStores = (
     config: IUnleashConfig,
@@ -144,10 +150,24 @@ export const createStores = (
         privateProjectStore: new PrivateProjectStore(db, getLogger),
         dependentFeaturesStore: new DependentFeaturesStore(db),
         lastSeenStore: new LastSeenStore(db, eventBus, getLogger),
-        featureSearchStore: new FeatureSearchStore(db, eventBus, getLogger),
+        featureSearchStore: new FeatureSearchStore(
+            db,
+            eventBus,
+            getLogger,
+            config.flagResolver,
+        ),
         inactiveUsersStore: new InactiveUsersStore(db, eventBus, getLogger),
         trafficDataUsageStore: new TrafficDataUsageStore(db, getLogger),
         segmentReadModel: new SegmentReadModel(db),
+        projectOwnersReadModel: new ProjectOwnersReadModel(db),
+        projectFlagCreatorsReadModel: new ProjectFlagCreatorsReadModel(db),
+        featureLifecycleStore: new FeatureLifecycleStore(db),
+        featureStrategiesReadModel: new FeatureStrategiesReadModel(db),
+        featureLifecycleReadModel: new FeatureLifecycleReadModel(
+            db,
+            config.flagResolver,
+        ),
+        largestResourcesReadModel: new LargestResourcesReadModel(db),
     };
 };
 

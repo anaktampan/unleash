@@ -26,7 +26,7 @@ Unleash started on http://localhost:4242
 
 To run multiple replicas of Unleash simply point all instances to the same database.
 
-**Unleash v4:** The first time Unleash starts it will create a default user which you can use to sign-in to you Unleash instance and add more users with:
+The first time Unleash starts it will create a default user which you can use to sign-in to you Unleash instance and add more users with:
 
 - username: `admin`
 - password: `unleash4all`
@@ -121,7 +121,7 @@ docker run -p 4242:4242 \
 
 ## Test your server and create a sample API call {#test-your-server-and-create-a-sample-api-call}
 
-Once the Unleash server has started, go to [localhost:4242](http://localhost:4242) in your browser. If you see an empty list of feature toggles, try creating one with [curl](https://curl.se/) from a terminal/bash shell:
+Once the Unleash server has started, go to [localhost:4242](http://localhost:4242) in your browser. If you see an empty list of feature flags, try creating one with [curl](https://curl.se/) from a terminal/bash shell:
 
 ```
 curl --location -H "Authorization: <apitoken from previous step>" \

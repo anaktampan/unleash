@@ -45,9 +45,11 @@ import { useFavoriteFeaturesApi } from 'hooks/api/actions/useFavoriteFeaturesApi
 import { FavoriteIconButton } from 'component/common/FavoriteIconButton/FavoriteIconButton';
 import { ReactComponent as ChildLinkIcon } from 'assets/icons/link-child.svg';
 import { ReactComponent as ParentLinkIcon } from 'assets/icons/link-parent.svg';
-import { ChildrenTooltip } from './FeatureOverview/FeatureOverviewSidePanel/FeatureOverviewSidePanelDetails/ChildrenTooltip';
+import { ChildrenTooltip } from './FeatureOverview/FeatureOverviewMetaData/ChildrenTooltip';
 import copy from 'copy-to-clipboard';
 import useToast from 'hooks/useToast';
+import { useUiFlag } from 'hooks/useUiFlag';
+import type { IFeatureToggle } from 'interfaces/featureToggle';
 
 const StyledHeader = styled('div')(({ theme }) => ({
     backgroundColor: theme.palette.background.paper,
@@ -65,7 +67,7 @@ const StyledInnerContainer = styled('div')(({ theme }) => ({
     },
 }));
 
-const StyledToggleInfoContainer = styled('div')({
+const StyledFlagInfoContainer = styled('div')({
     display: 'flex',
     alignItems: 'center',
 });
@@ -133,6 +135,14 @@ export const StyledLink = styled(Link)(({ theme }) => ({
     },
 }));
 
+const useLegacyVariants = (environments: IFeatureToggle['environments']) => {
+    const enableLegacyVariants = useUiFlag('enableLegacyVariants');
+    const existingLegacyVariantsExist = environments.some(
+        (environment) => environment.variants?.length,
+    );
+    return enableLegacyVariants || existingLegacyVariantsExist;
+};
+
 export const FeatureView = () => {
     const projectId = useRequiredPathParam('projectId');
     const featureId = useRequiredPathParam('featureId');
@@ -157,6 +167,8 @@ export const FeatureView = () => {
 
     const basePath = `/projects/${projectId}/features/${featureId}`;
 
+    const showLegacyVariants = useLegacyVariants(feature.environments);
+
     const tabData = [
         {
             title: 'Overview',
@@ -168,7 +180,15 @@ export const FeatureView = () => {
             path: `${basePath}/metrics`,
             name: 'Metrics',
         },
-        { title: 'Variants', path: `${basePath}/variants`, name: 'Variants' },
+        ...(showLegacyVariants
+            ? [
+                  {
+                      title: 'Variants',
+                      path: `${basePath}/variants`,
+                      name: 'Variants',
+                  },
+              ]
+            : []),
         { title: 'Settings', path: `${basePath}/settings`, name: 'Settings' },
         {
             title: 'Event log',
@@ -220,13 +240,13 @@ export const FeatureView = () => {
         <div ref={ref}>
             <StyledHeader>
                 <StyledInnerContainer>
-                    <StyledToggleInfoContainer>
+                    <StyledFlagInfoContainer>
                         <FavoriteIconButton
                             onClick={onFavorite}
                             isFavorite={feature?.favorite}
                         />
                         <div>
-                            <StyledToggleInfoContainer>
+                            <StyledFlagInfoContainer>
                                 <StyledFeatureViewHeader data-loading>
                                     {feature.name}{' '}
                                 </StyledFeatureViewHeader>
@@ -259,7 +279,7 @@ export const FeatureView = () => {
                                         />
                                     }
                                 />
-                            </StyledToggleInfoContainer>
+                            </StyledFlagInfoContainer>
                             <ConditionallyRender
                                 condition={feature.dependencies.length > 0}
                                 show={
@@ -286,7 +306,7 @@ export const FeatureView = () => {
                                 }
                             />
                         </div>
-                    </StyledToggleInfoContainer>
+                    </StyledFlagInfoContainer>
 
                     <StyledToolbarContainer>
                         <PermissionIconButton
@@ -305,7 +325,7 @@ export const FeatureView = () => {
                             permission={DELETE_FEATURE}
                             projectId={projectId}
                             tooltipProps={{
-                                title: 'Archive feature toggle',
+                                title: 'Archive feature flag',
                             }}
                             data-loading
                             onClick={() => setShowDelDialog(true)}

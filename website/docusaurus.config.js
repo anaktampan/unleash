@@ -41,7 +41,7 @@ const addDocsRoutePrefix = ({ from, ...rest }) => {
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
     title: 'Unleash',
-    tagline: 'The enterprise ready feature toggle service',
+    tagline: 'The enterprise ready feature flag service',
     url: 'https://docs.getunleash.io',
     baseUrl: '/',
     onBrokenLinks: 'throw',
@@ -68,6 +68,7 @@ module.exports = {
             logo: {
                 alt: 'Unleash logo',
                 src: 'img/unleash_logo_white.svg',
+                href: 'https://www.getunleash.io',
             },
             items: [
                 {
@@ -81,6 +82,26 @@ module.exports = {
                     position: 'right',
                     docId: 'welcome',
                     html: '<span class="hide-when-active">Docs</span>',
+                },
+                {
+                    type: 'html',
+                    value: '<a href="https://www.getunleash.io/enterprise-feature-management-platform" class="navbar__item navbar__link">Product</a>',
+                    position: 'right',
+                },
+                {
+                    type: 'html',
+                    value: '<a href="https://www.getunleash.io/plans" class="navbar__item navbar__link">Plans</a>',
+                    position: 'right',
+                },
+                {
+                    type: 'html',
+                    value: '<a href="https://www.getunleash.io/blog" class="navbar__item navbar__link">Blog</a>',
+                    position: 'right',
+                },
+                {
+                    type: 'html',
+                    position: 'right',
+                    value: '<span class="navbar-separator"></span>',
                 },
                 {
                     type: 'dropdown',
@@ -131,13 +152,8 @@ module.exports = {
                     value: '<span class="navbar-separator"></span>',
                 },
                 {
-                    href: 'https://www.getunleash.io/plans',
-                    label: 'Plans',
-                    position: 'right',
-                },
-                {
-                    href: 'https://app.unleash-hosted.com/sign-in',
-                    label: 'Sign in',
+                    type: 'html',
+                    value: '<a href="https://app.unleash-hosted.com/sign-in" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">Sign in</a>',
                     position: 'right',
                 },
                 {
@@ -167,6 +183,47 @@ module.exports = {
                 'swift',
             ],
         },
+        languageTabs: [
+            {
+                highlight: 'bash',
+                language: 'curl',
+            },
+            {
+                highlight: 'python',
+                language: 'python',
+                variant: 'requests',
+            },
+            {
+                highlight: 'go',
+                language: 'go',
+            },
+            {
+                highlight: 'javascript',
+                language: 'nodejs',
+                variant: 'native',
+            },
+            {
+                highlight: 'ruby',
+                language: 'ruby',
+            },
+            {
+                highlight: 'csharp',
+                language: 'csharp',
+                variant: 'httpclient',
+            },
+            {
+                highlight: 'php',
+                language: 'php',
+            },
+            {
+                highlight: 'java',
+                language: 'java',
+            },
+            {
+                highlight: 'powershell',
+                language: 'powershell',
+            },
+        ],
         footer: {
             style: 'dark',
             links: [
@@ -711,13 +768,6 @@ module.exports = {
                     },
                     {
                         from: [
-                            '/reference/deploy/configuring-unleash-v3',
-                            '/deploy/configuring_unleash_v3',
-                        ],
-                        to: '/using-unleash/deploy/configuring-unleash-v3',
-                    },
-                    {
-                        from: [
                             '/reference/deploy/database-setup',
                             '/deploy/database-setup',
                         ],
@@ -771,6 +821,32 @@ module.exports = {
                             '/deploy/environment-import-export',
                         ],
                         to: '/how-to/how-to-environment-import-export',
+                    },
+                    {
+                        from: [
+                            '/topics/feature-flags/runtime-control',
+                            '/topics/feature-flags/never-expose-pii',
+                            '/topics/feature-flags/evaluate-flags-close-to-user',
+                            '/topics/feature-flags/scale-horizontally',
+                            '/topics/feature-flags/limit-payloads',
+                            '/topics/feature-flags/availability-over-consistency',
+                            '/topics/feature-flags/short-lived-feature-flags',
+                            '/topics/feature-flags/unique-names',
+                            '/topics/feature-flags/democratize-feature-flag-access',
+                            '/topics/feature-flags/prioritize-ux',
+                            '/topics/feature-flags/enable-traceability',
+                        ],
+                        to: '/topics/feature-flags/feature-flag-best-practices',
+                    },
+                    {
+                        from: [
+                            '/topics/feature-flag-migration/feature-flag-migration-scope',
+                            '/topics/feature-flag-migration/business-case-feature-flag-migration',
+                            '/topics/feature-flag-migration/planning-feature-flag-migration',
+                            '/topics/feature-flag-migration/how-to-execute-feature-flag-migration',
+                            '/topics/feature-flag-migration/onbording-users-to-feature-flag-service',
+                        ],
+                        to: '/topics/feature-flag-migration/feature-flag-migration-best-practices',
                     },
                 ].map(addDocsRoutePrefix), // add /docs prefixes
                 createRedirects: (toPath) => {
@@ -841,7 +917,7 @@ module.exports = {
             'data-project-color': '#1A4049',
             'data-project-logo':
                 'https://cdn.getunleash.io/uploads/2022/05/logo.png',
-            async: true,
+            defer: true,
         },
     ],
     clientModules: [require.resolve('./global.js')],

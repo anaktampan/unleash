@@ -15,6 +15,7 @@ import type { Db } from '../../../lib/db/db';
 import type { IContextFieldDto } from '../../../lib/types/stores/context-field-store';
 import { DEFAULT_ENV } from '../../../lib/util';
 import type {
+    CreateDependentFeatureSchema,
     CreateFeatureSchema,
     CreateFeatureStrategySchema,
     ImportTogglesSchema,
@@ -22,7 +23,7 @@ import type {
 import type { Knex } from 'knex';
 import type TestAgent from 'supertest/lib/agent';
 import type Test from 'supertest/lib/test';
-
+import type { Server } from 'node:http';
 process.env.NODE_ENV = 'test';
 
 export interface IUnleashTest extends IUnleashHttpAPI {
@@ -30,6 +31,13 @@ export interface IUnleashTest extends IUnleashHttpAPI {
     destroy: () => Promise<void>;
     services: IUnleashServices;
     config: IUnleashConfig;
+}
+
+export interface IUnleashNoSupertest {
+    server: Server;
+    services: IUnleashServices;
+    config: IUnleashConfig;
+    destroy: () => Promise<void>;
 }
 
 /**
@@ -95,7 +103,10 @@ export interface IUnleashHttpAPI {
         expectedResponseCode?: number,
     ): supertest.Test;
 
-    addDependency(child: string, parent: string): supertest.Test;
+    addDependency(
+        child: string,
+        parent: string | CreateDependentFeatureSchema,
+    ): supertest.Test;
 
     addTag(
         feature: string,
@@ -217,7 +228,7 @@ function httpApis(
 
         addDependency(
             child: string,
-            parent: string,
+            parent: string | CreateDependentFeatureSchema,
             project = DEFAULT_PROJECT,
             expectedResponseCode: number = 200,
         ): supertest.Test {
@@ -225,7 +236,7 @@ function httpApis(
                 .post(
                     `/api/admin/projects/${project}/features/${child}/dependencies`,
                 )
-                .send({ feature: parent })
+                .send(typeof parent === 'string' ? { feature: parent } : parent)
                 .set('Content-Type', 'application/json')
                 .expect(expectedResponseCode);
         },
@@ -346,6 +357,53 @@ async function createApp(
 
 export async function setupApp(stores: IUnleashStores): Promise<IUnleashTest> {
     return createApp(stores);
+}
+
+export async function setupAppWithoutSupertest(
+    stores,
+    customOptions?: any,
+    db?: Db,
+): Promise<IUnleashNoSupertest> {
+    const config = createTestConfig({
+        authentication: {
+            type: IAuthType.DEMO,
+        },
+        server: {
+            unleashUrl: 'http://localhost:4242',
+        },
+        disableScheduler: true,
+        ...{
+            ...customOptions,
+            experimental: {
+                ...(customOptions?.experimental ?? {}),
+                flags: {
+                    strictSchemaValidation: true,
+                    ...(customOptions?.experimental?.flags ?? {}),
+                },
+            },
+        },
+    });
+    const services = createServices(stores, config, db);
+    const unleashSession = sessionDb(config, undefined);
+    const app = await getApp(config, stores, services, unleashSession, db);
+    const server = app.listen(0);
+    const destroy = async () => {
+        // iterate on the keys of services and if the services at that key has a function called destroy then call it
+        await Promise.all(
+            Object.keys(services).map(async (key) => {
+                if (services[key].destroy) {
+                    await services[key].destroy();
+                }
+            }),
+        );
+        await server.close();
+    };
+    return {
+        server,
+        destroy,
+        services,
+        config,
+    };
 }
 
 export async function setupAppWithCustomConfig(

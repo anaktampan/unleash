@@ -19,7 +19,6 @@ import {
     type IUnleashOptions,
     type IUnleashServices,
     RoleName,
-    SYSTEM_USER,
 } from './types';
 
 import User, { type IAuditUser, type IUser } from './types/user';
@@ -35,6 +34,7 @@ import * as eventType from './types/events';
 import { Db } from './db/db';
 import { defaultLockKey, defaultTimeout, withDbLock } from './util/db-lock';
 import { scheduleServices } from './features/scheduler/schedule-services';
+import { compareAndLogPostgresVersion } from './util/postgres-version-checker';
 
 async function createApp(
     config: IUnleashConfig,
@@ -45,6 +45,7 @@ async function createApp(
     const serverVersion = config.enterpriseVersion ?? version;
     const db = createDb(config);
     const stores = createStores(config, db);
+    await compareAndLogPostgresVersion(config, stores.settingStore);
     const services = createServices(stores, config, db);
     if (!config.disableScheduler) {
         await scheduleServices(services, config);
@@ -96,13 +97,11 @@ async function createApp(
     };
 
     if (config.import.file) {
-        await services.stateService.importFile({
-            file: config.import.file,
-            dropBeforeImport: config.import.dropBeforeImport,
-            userName: 'import',
-            keepExisting: config.import.keepExisting,
-            userId: SYSTEM_USER.id,
-        });
+        await services.importService.importFromFile(
+            config.import.file,
+            config.import.project,
+            config.import.environment,
+        );
     }
 
     if (

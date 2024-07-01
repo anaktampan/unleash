@@ -21,10 +21,9 @@ import {
     PROJECT_ENVIRONMENT_REMOVED,
 } from './types/events';
 import type { IUnleashConfig } from './types/option';
-import type { IUnleashStores } from './types/stores';
+import type { ISettingStore, IUnleashStores } from './types/stores';
 import { hoursToMilliseconds, minutesToMilliseconds } from 'date-fns';
 import type { InstanceStatsService } from './features/instance-stats/instance-stats-service';
-import type { ValidatedClientMetrics } from './features/metrics/shared/schema';
 import type { IEnvironment } from './types';
 import {
     createCounter,
@@ -33,6 +32,7 @@ import {
     createHistogram,
 } from './util/metrics';
 import type { SchedulerService } from './services';
+import type { IClientMetricsEnv } from './features/metrics/client-metrics/client-metrics-store-v2-type';
 
 export default class MetricsMonitor {
     constructor() {}
@@ -94,25 +94,55 @@ export default class MetricsMonitor {
             maxAgeSeconds: 600,
             ageBuckets: 5,
         });
-        const featureToggleUpdateTotal = createCounter({
+        const featureFlagUpdateTotal = createCounter({
             name: 'feature_toggle_update_total',
-            help: 'Number of times a toggle has been updated. Environment label would be "n/a" when it is not available, e.g. when a feature toggle is created.',
+            help: 'Number of times a toggle has been updated. Environment label would be "n/a" when it is not available, e.g. when a feature flag is created.',
             labelNames: ['toggle', 'project', 'environment', 'environmentType'],
         });
-        const featureToggleUsageTotal = createCounter({
+        const featureFlagUsageTotal = createCounter({
             name: 'feature_toggle_usage_total',
-            help: 'Number of times a feature toggle has been used',
+            help: 'Number of times a feature flag has been used',
             labelNames: ['toggle', 'active', 'appName'],
         });
-        const featureTogglesTotal = createGauge({
+        const featureFlagsTotal = createGauge({
             name: 'feature_toggles_total',
-            help: 'Number of feature toggles',
+            help: 'Number of feature flags',
             labelNames: ['version'],
+        });
+        const maxFeatureEnvironmentStrategies = createGauge({
+            name: 'max_feature_environment_strategies',
+            help: 'Maximum number of environment strategies in one feature',
+            labelNames: ['feature', 'environment'],
+        });
+        const maxFeatureStrategies = createGauge({
+            name: 'max_feature_strategies',
+            help: 'Maximum number of strategies in one feature',
+            labelNames: ['feature'],
+        });
+        const maxConstraintValues = createGauge({
+            name: 'max_constraint_values',
+            help: 'Maximum number of constraint values used in a single constraint',
+            labelNames: ['feature', 'environment'],
+        });
+        const maxConstraintsPerStrategy = createGauge({
+            name: 'max_strategy_constraints',
+            help: 'Maximum number of constraints used on a single strategy',
+            labelNames: ['feature', 'environment'],
+        });
+        const largestProjectEnvironment = createGauge({
+            name: 'largest_project_environment_size',
+            help: 'The largest project environment size (bytes) based on strategies, constraints, variants and parameters',
+            labelNames: ['project', 'environment'],
+        });
+        const largestFeatureEnvironment = createGauge({
+            name: 'largest_feature_environment_size',
+            help: 'The largest feature environment size (bytes) base on strategies, constraints, variants and parameters',
+            labelNames: ['feature', 'environment'],
         });
 
         const featureTogglesArchivedTotal = createGauge({
             name: 'feature_toggles_archived_total',
-            help: 'Number of archived feature toggles',
+            help: 'Number of archived feature flags',
         });
         const usersTotal = createGauge({
             name: 'users_total',
@@ -259,6 +289,24 @@ export default class MetricsMonitor {
             help: 'Duration of mapFeaturesForClient function',
         });
 
+        const featureLifecycleStageDuration = createGauge({
+            name: 'feature_lifecycle_stage_duration',
+            labelNames: ['stage', 'project_id'],
+            help: 'Duration of feature lifecycle stages',
+        });
+
+        const featureLifecycleStageCountByProject = createGauge({
+            name: 'feature_lifecycle_stage_count_by_project',
+            help: 'Count features in a given stage by project id',
+            labelNames: ['stage', 'project_id'],
+        });
+
+        const featureLifecycleStageEnteredCounter = createCounter({
+            name: 'feature_lifecycle_stage_entered',
+            help: 'Count how many features entered a given stage',
+            labelNames: ['stage'],
+        });
+
         const projectEnvironmentsDisabled = createCounter({
             name: 'project_environments_disabled',
             help: 'How many "environment disabled" events we have received for each project',
@@ -268,11 +316,32 @@ export default class MetricsMonitor {
         async function collectStaticCounters() {
             try {
                 const stats = await instanceStatsService.getStats();
+                const [
+                    maxStrategies,
+                    maxEnvironmentStrategies,
+                    maxConstraintValuesResult,
+                    maxConstraintsPerStrategyResult,
+                    stageCountByProjectResult,
+                    stageDurationByProject,
+                    largestProjectEnvironments,
+                    largestFeatureEnvironments,
+                ] = await Promise.all([
+                    stores.featureStrategiesReadModel.getMaxFeatureStrategies(),
+                    stores.featureStrategiesReadModel.getMaxFeatureEnvironmentStrategies(),
+                    stores.featureStrategiesReadModel.getMaxConstraintValues(),
+                    stores.featureStrategiesReadModel.getMaxConstraintsPerStrategy(),
+                    stores.featureLifecycleReadModel.getStageCountByProject(),
+                    stores.featureLifecycleReadModel.getAllWithStageDuration(),
+                    stores.largestResourcesReadModel.getLargestProjectEnvironments(
+                        1,
+                    ),
+                    stores.largestResourcesReadModel.getLargestFeatureEnvironments(
+                        1,
+                    ),
+                ]);
 
-                featureTogglesTotal.reset();
-                featureTogglesTotal
-                    .labels({ version })
-                    .set(stats.featureToggles);
+                featureFlagsTotal.reset();
+                featureFlagsTotal.labels({ version }).set(stats.featureToggles);
 
                 featureTogglesArchivedTotal.reset();
                 featureTogglesArchivedTotal.set(stats.archivedFeatureToggles);
@@ -283,10 +352,95 @@ export default class MetricsMonitor {
                 serviceAccounts.reset();
                 serviceAccounts.set(stats.serviceAccounts);
 
+                stageDurationByProject.forEach((stage) => {
+                    featureLifecycleStageDuration
+                        .labels({
+                            stage: stage.stage,
+                            project_id: stage.project,
+                        })
+                        .set(stage.duration);
+                });
+
+                eventBus.on(
+                    events.STAGE_ENTERED,
+                    (entered: { stage: string; feature: string }) => {
+                        featureLifecycleStageEnteredCounter
+                            .labels({ stage: entered.stage })
+                            .inc();
+                    },
+                );
+
+                featureLifecycleStageCountByProject.reset();
+                stageCountByProjectResult.forEach((stageResult) =>
+                    featureLifecycleStageCountByProject
+                        .labels({
+                            project_id: stageResult.project,
+                            stage: stageResult.stage,
+                        })
+                        .set(stageResult.count),
+                );
+
                 apiTokens.reset();
 
                 for (const [type, value] of stats.apiTokens) {
                     apiTokens.labels({ type }).set(value);
+                }
+
+                if (maxEnvironmentStrategies) {
+                    maxFeatureEnvironmentStrategies.reset();
+                    maxFeatureEnvironmentStrategies
+                        .labels({
+                            environment: maxEnvironmentStrategies.environment,
+                            feature: maxEnvironmentStrategies.feature,
+                        })
+                        .set(maxEnvironmentStrategies.count);
+                }
+                if (maxStrategies) {
+                    maxFeatureStrategies.reset();
+                    maxFeatureStrategies
+                        .labels({ feature: maxStrategies.feature })
+                        .set(maxStrategies.count);
+                }
+                if (maxConstraintValuesResult) {
+                    maxConstraintValues.reset();
+                    maxConstraintValues
+                        .labels({
+                            environment: maxConstraintValuesResult.environment,
+                            feature: maxConstraintValuesResult.feature,
+                        })
+                        .set(maxConstraintValuesResult.count);
+                }
+                if (maxConstraintsPerStrategyResult) {
+                    maxConstraintsPerStrategy.reset();
+                    maxConstraintsPerStrategy
+                        .labels({
+                            environment:
+                                maxConstraintsPerStrategyResult.environment,
+                            feature: maxConstraintsPerStrategyResult.feature,
+                        })
+                        .set(maxConstraintsPerStrategyResult.count);
+                }
+
+                if (largestProjectEnvironments.length > 0) {
+                    const projectEnvironment = largestProjectEnvironments[0];
+                    largestProjectEnvironment.reset();
+                    largestProjectEnvironment
+                        .labels({
+                            project: projectEnvironment.project,
+                            environment: projectEnvironment.environment,
+                        })
+                        .set(projectEnvironment.size);
+                }
+
+                if (largestFeatureEnvironments.length > 0) {
+                    const featureEnvironment = largestFeatureEnvironments[0];
+                    largestFeatureEnvironment.reset();
+                    largestFeatureEnvironment
+                        .labels({
+                            feature: featureEnvironment.feature,
+                            environment: featureEnvironment.environment,
+                        })
+                        .set(featureEnvironment.size);
                 }
 
                 enabledMetricsBucketsPreviousDay.reset();
@@ -358,7 +512,10 @@ export default class MetricsMonitor {
 
                 rateLimits.reset();
                 rateLimits
-                    .labels({ endpoint: '/api/client/metrics', method: 'POST' })
+                    .labels({
+                        endpoint: '/api/client/metrics',
+                        method: 'POST',
+                    })
                     .set(config.metricsRateLimiting.clientMetricsMaxPerMinute);
                 rateLimits
                     .labels({
@@ -389,7 +546,10 @@ export default class MetricsMonitor {
                     })
                     .set(config.rateLimiting.createUserMaxPerMinute);
                 rateLimits
-                    .labels({ endpoint: '/auth/simple', method: 'POST' })
+                    .labels({
+                        endpoint: '/auth/simple',
+                        method: 'POST',
+                    })
                     .set(config.rateLimiting.simpleLoginMaxPerMinute);
                 rateLimits
                     .labels({
@@ -419,7 +579,12 @@ export default class MetricsMonitor {
             events.REQUEST_TIME,
             ({ path, method, time, statusCode, appName }) => {
                 requestDuration
-                    .labels({ path, method, status: statusCode, appName })
+                    .labels({
+                        path,
+                        method,
+                        status: statusCode,
+                        appName,
+                    })
                     .observe(time);
             },
         );
@@ -432,7 +597,10 @@ export default class MetricsMonitor {
             events.FUNCTION_TIME,
             ({ functionName, className, time }) => {
                 functionDuration
-                    .labels({ functionName, className })
+                    .labels({
+                        functionName,
+                        className,
+                    })
                     .observe(time);
             },
         );
@@ -446,7 +614,12 @@ export default class MetricsMonitor {
         });
 
         eventBus.on(events.DB_TIME, ({ store, action, time }) => {
-            dbDuration.labels({ store, action }).observe(time);
+            dbDuration
+                .labels({
+                    store,
+                    action,
+                })
+                .observe(time);
         });
 
         eventBus.on(events.PROXY_REPOSITORY_CREATED, () => {
@@ -462,7 +635,7 @@ export default class MetricsMonitor {
         });
 
         eventStore.on(FEATURE_CREATED, ({ featureName, project }) => {
-            featureToggleUpdateTotal.increment({
+            featureFlagUpdateTotal.increment({
                 toggle: featureName,
                 project,
                 environment: 'n/a',
@@ -470,7 +643,7 @@ export default class MetricsMonitor {
             });
         });
         eventStore.on(FEATURE_VARIANTS_UPDATED, ({ featureName, project }) => {
-            featureToggleUpdateTotal.increment({
+            featureFlagUpdateTotal.increment({
                 toggle: featureName,
                 project,
                 environment: 'n/a',
@@ -478,7 +651,7 @@ export default class MetricsMonitor {
             });
         });
         eventStore.on(FEATURE_METADATA_UPDATED, ({ featureName, project }) => {
-            featureToggleUpdateTotal.increment({
+            featureFlagUpdateTotal.increment({
                 toggle: featureName,
                 project,
                 environment: 'n/a',
@@ -486,7 +659,7 @@ export default class MetricsMonitor {
             });
         });
         eventStore.on(FEATURE_UPDATED, ({ featureName, project }) => {
-            featureToggleUpdateTotal.increment({
+            featureFlagUpdateTotal.increment({
                 toggle: featureName,
                 project,
                 environment: 'default',
@@ -500,7 +673,7 @@ export default class MetricsMonitor {
                     environment,
                     cachedEnvironments,
                 );
-                featureToggleUpdateTotal.increment({
+                featureFlagUpdateTotal.increment({
                     toggle: featureName,
                     project,
                     environment,
@@ -515,7 +688,7 @@ export default class MetricsMonitor {
                     environment,
                     cachedEnvironments,
                 );
-                featureToggleUpdateTotal.increment({
+                featureFlagUpdateTotal.increment({
                     toggle: featureName,
                     project,
                     environment,
@@ -530,7 +703,7 @@ export default class MetricsMonitor {
                     environment,
                     cachedEnvironments,
                 );
-                featureToggleUpdateTotal.increment({
+                featureFlagUpdateTotal.increment({
                     toggle: featureName,
                     project,
                     environment,
@@ -545,7 +718,7 @@ export default class MetricsMonitor {
                     environment,
                     cachedEnvironments,
                 );
-                featureToggleUpdateTotal.increment({
+                featureFlagUpdateTotal.increment({
                     toggle: featureName,
                     project,
                     environment,
@@ -560,7 +733,7 @@ export default class MetricsMonitor {
                     environment,
                     cachedEnvironments,
                 );
-                featureToggleUpdateTotal.increment({
+                featureFlagUpdateTotal.increment({
                     toggle: featureName,
                     project,
                     environment,
@@ -569,7 +742,7 @@ export default class MetricsMonitor {
             },
         );
         eventStore.on(FEATURE_ARCHIVED, ({ featureName, project }) => {
-            featureToggleUpdateTotal.increment({
+            featureFlagUpdateTotal.increment({
                 toggle: featureName,
                 project,
                 environment: 'n/a',
@@ -577,7 +750,7 @@ export default class MetricsMonitor {
             });
         });
         eventStore.on(FEATURE_REVIVED, ({ featureName, project }) => {
-            featureToggleUpdateTotal.increment({
+            featureFlagUpdateTotal.increment({
                 toggle: featureName,
                 project,
                 environment: 'n/a',
@@ -585,26 +758,32 @@ export default class MetricsMonitor {
             });
         });
 
-        eventBus.on(CLIENT_METRICS, (m: ValidatedClientMetrics) => {
-            for (const entry of Object.entries(m.bucket.toggles)) {
-                featureToggleUsageTotal.increment(
-                    {
-                        toggle: entry[0],
-                        active: 'true',
-                        appName: m.appName,
-                    },
-                    entry[1].yes,
-                );
-                featureToggleUsageTotal.increment(
-                    {
-                        toggle: entry[0],
-                        active: 'false',
-                        appName: m.appName,
-                    },
-                    entry[1].no,
-                );
+        const logger = config.getLogger('metrics.ts');
+        eventBus.on(CLIENT_METRICS, (metrics: IClientMetricsEnv[]) => {
+            try {
+                for (const metric of metrics) {
+                    featureFlagUsageTotal.increment(
+                        {
+                            toggle: metric.featureName,
+                            active: 'true',
+                            appName: metric.appName,
+                        },
+                        metric.yes,
+                    );
+                    featureFlagUsageTotal.increment(
+                        {
+                            toggle: metric.featureName,
+                            active: 'false',
+                            appName: metric.appName,
+                        },
+                        metric.no,
+                    );
+                }
+            } catch (e) {
+                logger.warn('Metrics registration failed', e);
             }
         });
+
         eventStore.on(CLIENT_REGISTER, (m) => {
             if (m.sdkVersion && m.sdkVersion.indexOf(':') > -1) {
                 const [sdkName, sdkVersion] = m.sdkVersion.split(':');
@@ -618,7 +797,12 @@ export default class MetricsMonitor {
             projectEnvironmentsDisabled.increment({ project_id: project });
         });
 
-        await this.configureDbMetrics(db, eventBus, schedulerService);
+        await this.configureDbMetrics(
+            db,
+            eventBus,
+            schedulerService,
+            stores.settingStore,
+        );
 
         return Promise.resolve();
     }
@@ -627,6 +811,7 @@ export default class MetricsMonitor {
         db: Knex,
         eventBus: EventEmitter,
         schedulerService: SchedulerService,
+        settingStore: ISettingStore,
     ): Promise<void> {
         if (db?.client) {
             const dbPoolMin = createGauge({
@@ -674,6 +859,13 @@ export default class MetricsMonitor {
                 'registerPoolMetrics',
                 0, // no jitter
             );
+            const postgresVersion = await settingStore.postgresVersion();
+            const database_version = createGauge({
+                name: 'postgres_version',
+                help: 'Which version of postgres is running (SHOW server_version)',
+                labelNames: ['version'],
+            });
+            database_version.labels({ version: postgresVersion }).set(1);
         }
     }
 
@@ -704,6 +896,7 @@ export default class MetricsMonitor {
         }
     }
 }
+
 export function createMetricsMonitor(): MetricsMonitor {
     return new MetricsMonitor();
 }

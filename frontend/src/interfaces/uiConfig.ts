@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Variant } from 'utils/variants';
+import type { ResourceLimitsSchema } from '../openapi';
 
 export interface IUiConfig {
     authenticationType?: string;
@@ -28,6 +29,7 @@ export interface IUiConfig {
     segmentValuesLimit?: number;
     strategySegmentsLimit?: number;
     frontendApiOrigins?: string[];
+    resourceLimits: ResourceLimitsSchema;
 }
 
 export interface IProclamationToast {
@@ -68,23 +70,25 @@ export type UiFlags = {
     featureSearchFeedback?: Variant;
     enableLicense?: boolean;
     adminTokenKillSwitch?: boolean;
-    executiveDashboardUI?: boolean;
+    killInsightsUI?: boolean;
     feedbackComments?: Variant;
     displayUpgradeEdgeBanner?: boolean;
     showInactiveUsers?: boolean;
     featureSearchFeedbackPosting?: boolean;
     userAccessUIEnabled?: boolean;
     outdatedSdksBanner?: boolean;
-    projectOverviewRefactor?: string;
     displayTrafficDataUsage?: boolean;
+    estimateTrafficDataCost?: boolean;
     disableShowContextFieldSelectionValues?: boolean;
-    variantDependencies?: boolean;
     projectOverviewRefactorFeedback?: boolean;
     featureLifecycle?: boolean;
     scimApi?: boolean;
-    projectListFilterMyProjects?: boolean;
-    createProjectWithEnvironmentConfig?: boolean;
-    projectsListNewCards?: boolean;
+    manyStrategiesPagination?: boolean;
+    enableLegacyVariants?: boolean;
+    navigationSidebar?: boolean;
+    commandBarUI?: boolean;
+    flagCreator?: boolean;
+    resourceLimits?: boolean;
 };
 
 export interface IVersionInfo {

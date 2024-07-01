@@ -18,7 +18,6 @@ import CreateTagType from 'component/tags/CreateTagType/CreateTagType';
 import CreateFeature from 'component/feature/CreateFeature/CreateFeature';
 import EditFeature from 'component/feature/EditFeature/EditFeature';
 import ContextList from 'component/context/ContextList/ContextList/ContextList';
-import RedirectFeatureView from 'component/feature/RedirectFeatureView/RedirectFeatureView';
 import { CreateIntegration } from 'component/integrations/CreateIntegration/CreateIntegration';
 import { EditIntegration } from 'component/integrations/EditIntegration/EditIntegration';
 import { CopyFeatureToggle } from 'component/feature/CopyFeature/CopyFeature';
@@ -35,7 +34,6 @@ import { SegmentTable } from '../segments/SegmentTable/SegmentTable';
 import { FeaturesArchiveTable } from '../archive/FeaturesArchiveTable';
 import { LazyPlayground } from 'component/playground/Playground/LazyPlayground';
 import { Profile } from 'component/user/Profile/Profile';
-import { LazyCreateProject } from 'component/project/Project/CreateProject/LazyCreateProject';
 import { LazyFeatureView } from 'component/feature/FeatureView/LazyFeatureView';
 import { LazyAdmin } from 'component/admin/LazyAdmin';
 import { LazyProject } from 'component/project/Project/LazyProject';
@@ -48,6 +46,7 @@ import { Insights } from '../insights/Insights';
 import { FeedbackList } from '../feedbackNew/FeedbackList';
 import { Application } from 'component/application/Application';
 import { Signals } from 'component/signals/Signals';
+import { LazyCreateProject } from '../project/Project/CreateProject/LazyCreateProject';
 
 export const routes: IRoute[] = [
     // Splash
@@ -105,16 +104,8 @@ export const routes: IRoute[] = [
     {
         path: '/projects/:projectId/create-toggle',
         parent: '/projects/:projectId/features',
-        title: 'Create feature toggle',
+        title: 'Create feature flag',
         component: CreateFeature,
-        type: 'protected',
-        menu: {},
-    },
-    {
-        path: '/projects/:projectId/features2/:featureId',
-        parent: '/features',
-        title: ':featureId',
-        component: RedirectFeatureView,
         type: 'protected',
         menu: {},
     },
@@ -136,14 +127,6 @@ export const routes: IRoute[] = [
     },
 
     // Features
-    {
-        path: '/features/:activeTab/:featureId',
-        parent: '/features',
-        title: ':featureId',
-        component: RedirectFeatureView,
-        type: 'protected',
-        menu: {},
-    },
     {
         path: '/search',
         title: 'Search',
@@ -169,8 +152,8 @@ export const routes: IRoute[] = [
         component: Insights,
         type: 'protected',
         menu: { mobile: true },
-        flag: 'executiveDashboardUI',
-        enterprise: false,
+        notFlag: 'killInsightsUI',
+        enterprise: true,
     },
 
     // Applications
@@ -218,7 +201,7 @@ export const routes: IRoute[] = [
     // Feature types
     {
         path: '/feature-toggle-type/*',
-        title: 'Feature toggle types',
+        title: 'Feature flag types',
         component: FeatureTypesList,
         type: 'protected',
         menu: { mobile: true, advanced: true },
@@ -427,7 +410,7 @@ export const routes: IRoute[] = [
     // Archive
     {
         path: '/archive',
-        title: 'Archived toggles',
+        title: 'Archived flags',
         component: FeaturesArchiveTable,
         type: 'protected',
         menu: {},

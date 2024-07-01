@@ -21,7 +21,7 @@ import type {
     PartialSome,
 } from '../../types';
 import FeatureToggleStore from './feature-toggle-store';
-import { ensureStringValue, mapValues } from '../../util';
+import { ensureStringValue, generateImageUrl, mapValues } from '../../util';
 import type { IFeatureProjectUserParams } from './feature-toggle-controller';
 import type { Db } from '../../db/db';
 import { isAfter } from 'date-fns';
@@ -159,7 +159,7 @@ const defaultParameters = (
     params: PartialSome<IFeatureStrategy, 'id' | 'createdAt'>,
     stickiness: string,
 ) => {
-    if (params.strategyName === 'gradualRollout') {
+    if (params.strategyName === 'flexibleRollout') {
         return {
             rollout: '100',
             stickiness,
@@ -373,11 +373,37 @@ class FeatureStrategiesStore implements IFeatureStrategiesStore {
         userId,
     }: ILoadFeatureToggleWithEnvsParams): Promise<FeatureToggleWithEnvironment> {
         const stopTimer = this.timer('getFeatureAdmin');
-        let query = this.db('features_view')
+        const query = this.db.with('metrics', (queryBuilder) => {
+            queryBuilder
+                .sum('yes as yes')
+                .sum('no as no')
+                .select(['client_metrics_env.environment'])
+                .from('client_metrics_env')
+                .where(
+                    'client_metrics_env.timestamp',
+                    '>=',
+                    this.db.raw("NOW() - INTERVAL '1 hour'"),
+                )
+                .andWhere('client_metrics_env.feature_name', featureName)
+                .groupBy(['client_metrics_env.environment']);
+        });
+
+        query
+            .from('features_view')
             .where('name', featureName)
             .modify(FeatureToggleStore.filterByArchived, archived);
 
-        let selectColumns = ['features_view.*'] as (string | Raw<any>)[];
+        let selectColumns = ['features_view.*', 'yes', 'no'] as (
+            | string
+            | Raw<any>
+        )[];
+
+        // add metrics
+        query.leftJoin(
+            'metrics',
+            'metrics.environment',
+            'features_view.environment',
+        );
 
         query.leftJoin('last_seen_at_metrics', function () {
             this.on(
@@ -390,13 +416,14 @@ class FeatureStrategiesStore implements IFeatureStrategiesStore {
                 'features_view.name',
             );
         });
+
         // Override feature view for now
         selectColumns.push(
             'last_seen_at_metrics.last_seen_at as env_last_seen_at',
         );
 
         if (userId) {
-            query = query.leftJoin(`favorite_features`, function () {
+            query.leftJoin(`favorite_features`, function () {
                 this.on(
                     'favorite_features.feature',
                     'features_view.name',
@@ -409,7 +436,6 @@ class FeatureStrategiesStore implements IFeatureStrategiesStore {
                 ),
             ];
         }
-
         const rows = await query.select(selectColumns);
         stopTimer();
 
@@ -427,6 +453,22 @@ class FeatureStrategiesStore implements IFeatureStrategiesStore {
                 acc.stale = r.stale;
 
                 acc.createdAt = r.created_at;
+                if (r.user_id) {
+                    const name =
+                        r.user_name ||
+                        r.user_username ||
+                        r.user_email ||
+                        'unknown';
+                    acc.createdBy = {
+                        id: r.user_id,
+                        name,
+                        imageUrl: generateImageUrl({
+                            id: r.user_id,
+                            email: r.user_email,
+                            username: name,
+                        }),
+                    };
+                }
                 acc.type = r.type;
                 if (!acc.environments[r.environment]) {
                     acc.environments[r.environment] = {
@@ -463,6 +505,8 @@ class FeatureStrategiesStore implements IFeatureStrategiesStore {
                 acc.variants = Array.from(currentVariants.values());
 
                 env.enabled = r.enabled;
+                env.yes = Number(r.yes) || 0;
+                env.no = Number(r.no) || 0;
                 env.type = r.environment_type;
                 env.sortOrder = r.environment_sort_order;
                 if (!env.strategies) {
@@ -504,7 +548,7 @@ class FeatureStrategiesStore implements IFeatureStrategiesStore {
             return featureToggle;
         }
         throw new NotFoundError(
-            `Could not find feature toggle with name ${featureName}`,
+            `Could not find feature flag with name ${featureName}`,
         );
     }
 

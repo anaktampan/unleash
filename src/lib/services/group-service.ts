@@ -10,6 +10,7 @@ import type {
 import {
     GroupDeletedEvent,
     GroupUpdatedEvent,
+    SYSTEM_USER_AUDIT,
     type IAuditUser,
     type IUnleashConfig,
     type IUnleashStores,
@@ -19,14 +20,15 @@ import type { Logger } from '../logger';
 import BadDataError from '../error/bad-data-error';
 import {
     GROUP_CREATED,
-    GROUP_USER_ADDED,
-    GROUP_USER_REMOVED,
+    GroupUserAdded,
+    GroupUserRemoved,
     type IBaseEvent,
 } from '../types/events';
 import NameExistsError from '../error/name-exists-error';
 import type { IAccountStore } from '../types/stores/account-store';
 import type { IUser } from '../types/user';
 import type EventService from '../features/events/event-service';
+import { SSO_SYNC_USER } from '../db/group-store';
 
 export class GroupService {
     private groupStore: IGroupStore;
@@ -238,8 +240,8 @@ export class GroupService {
     async syncExternalGroups(
         userId: number,
         externalGroups: string[],
-        createdBy?: string,
-        createdByUserId?: number,
+        createdBy?: string, // deprecated
+        createdByUserId?: number, // deprecated
     ): Promise<void> {
         if (Array.isArray(externalGroups)) {
             const newGroups = await this.groupStore.getNewGroupsForExternalUser(
@@ -249,7 +251,7 @@ export class GroupService {
             await this.groupStore.addUserToGroups(
                 userId,
                 newGroups.map((g) => g.id),
-                createdBy,
+                SSO_SYNC_USER,
             );
             const oldGroups = await this.groupStore.getOldGroupsForExternalUser(
                 userId,
@@ -259,27 +261,23 @@ export class GroupService {
 
             const events: IBaseEvent[] = [];
             for (const group of newGroups) {
-                events.push({
-                    type: GROUP_USER_ADDED,
-                    createdBy: createdBy ?? 'unknown',
-                    createdByUserId: createdByUserId ?? -9999,
-                    data: {
-                        groupId: group.id,
+                events.push(
+                    new GroupUserAdded({
                         userId,
-                    },
-                });
+                        groupId: group.id,
+                        auditUser: SYSTEM_USER_AUDIT,
+                    }),
+                );
             }
 
             for (const group of oldGroups) {
-                events.push({
-                    type: GROUP_USER_REMOVED,
-                    createdBy: createdBy ?? 'unknown',
-                    createdByUserId: createdByUserId ?? -9999,
-                    preData: {
-                        groupId: group.groupId,
+                events.push(
+                    new GroupUserRemoved({
                         userId,
-                    },
-                });
+                        groupId: group.groupId,
+                        auditUser: SYSTEM_USER_AUDIT,
+                    }),
+                );
             }
 
             await this.eventService.storeEvents(events);

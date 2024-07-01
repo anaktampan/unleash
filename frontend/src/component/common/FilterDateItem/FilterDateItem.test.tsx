@@ -3,7 +3,7 @@ import { render } from 'utils/testRenderer';
 import type { FilterItemParams } from 'component/filter/FilterItem/FilterItem';
 import { FilterDateItem, type IFilterDateItemProps } from './FilterDateItem';
 
-const getDate = (option: string) => screen.getByText(option);
+const getDate = async (option: string) => screen.findByText(option);
 
 const setup = (initialState: FilterItemParams | null) => {
     const recordedChanges: FilterItemParams[] = [];
@@ -38,11 +38,11 @@ describe('FilterDateItem Component', () => {
 
         valuesElement.click();
 
-        const selectedDate = getDate('21');
+        const selectedDate = await getDate('21');
 
         expect(selectedDate).toHaveAttribute('aria-selected', 'true');
 
-        getDate('22').click();
+        (await getDate('22')).click();
 
         expect(recordedChanges).toEqual([
             {
@@ -55,9 +55,14 @@ describe('FilterDateItem Component', () => {
     it('renders initial popover when no existing value', async () => {
         const mockState = null;
 
-        const recordedChanges = setup(mockState);
+        setup(mockState);
 
-        await screen.findByText('21');
+        const results = await screen.findAllByText('21');
+
+        // In *most* cases, this will probably only be 1, but it *can*
+        // be more if it's the right time of year (that is: if it
+        // would also show "week 21").
+        expect(results.length).toBeGreaterThanOrEqual(1);
     });
 
     it('switches operator', async () => {

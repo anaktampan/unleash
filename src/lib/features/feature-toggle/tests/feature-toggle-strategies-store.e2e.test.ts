@@ -4,13 +4,19 @@ import dbInit, {
     type ITestDb,
 } from '../../../../test/e2e/helpers/database-init';
 import getLogger from '../../../../test/fixtures/no-logger';
-import type { IProjectStore, IUnleashStores } from '../../../types';
+import type {
+    IFeatureStrategiesReadModel,
+    IProjectStore,
+    IUnleashStores,
+} from '../../../types';
+import { randomId } from '../../../util';
 
 let stores: IUnleashStores;
 let db: ITestDb;
 let featureStrategiesStore: IFeatureStrategiesStore;
 let featureToggleStore: IFeatureToggleStore;
 let projectStore: IProjectStore;
+let featureStrategiesReadModel: IFeatureStrategiesReadModel;
 
 const featureName = 'test-strategies-move-project';
 
@@ -20,10 +26,15 @@ beforeAll(async () => {
     featureStrategiesStore = stores.featureStrategiesStore;
     featureToggleStore = stores.featureToggleStore;
     projectStore = stores.projectStore;
+    featureStrategiesReadModel = stores.featureStrategiesReadModel;
     await featureToggleStore.create('default', {
         name: featureName,
         createdByUserId: 9999,
     });
+});
+
+afterEach(async () => {
+    await featureStrategiesStore.deleteAll();
 });
 
 afterAll(async () => {
@@ -154,7 +165,7 @@ describe('strategy parameters default to sane defaults', () => {
             createdByUserId: 9999,
         });
         const strategy = await featureStrategiesStore.createStrategyFeatureEnv({
-            strategyName: 'gradualRollout',
+            strategyName: 'flexibleRollout',
             projectId: 'default',
             environment: 'default',
             featureName: toggle.name,
@@ -174,7 +185,7 @@ describe('strategy parameters default to sane defaults', () => {
             createdByUserId: 9999,
         });
         const strategy = await featureStrategiesStore.createStrategyFeatureEnv({
-            strategyName: 'gradualRollout',
+            strategyName: 'flexibleRollout',
             projectId: 'default',
             environment: 'default',
             featureName: toggle.name,
@@ -226,7 +237,7 @@ describe('strategy parameters default to sane defaults', () => {
             createdByUserId: 9999,
         });
         const strategy = await featureStrategiesStore.createStrategyFeatureEnv({
-            strategyName: 'gradualRollout',
+            strategyName: 'flexibleRollout',
             projectId: project.id,
             environment: 'default',
             featureName: toggle.name,
@@ -235,5 +246,169 @@ describe('strategy parameters default to sane defaults', () => {
             parameters: {},
         });
         expect(strategy.parameters.stickiness).toBe(defaultStickiness);
+    });
+});
+
+describe('max metrics collection', () => {
+    test('Read feature with max number of strategies', async () => {
+        const toggle = await featureToggleStore.create('default', {
+            name: 'featureA',
+            createdByUserId: 9999,
+        });
+
+        const maxStrategiesBefore =
+            await featureStrategiesReadModel.getMaxFeatureStrategies();
+        const maxEnvStrategiesBefore =
+            await featureStrategiesReadModel.getMaxFeatureEnvironmentStrategies();
+        expect(maxStrategiesBefore).toBe(null);
+        expect(maxEnvStrategiesBefore).toBe(null);
+
+        await featureStrategiesStore.createStrategyFeatureEnv({
+            strategyName: 'gradualRollout',
+            projectId: 'default',
+            environment: 'default',
+            featureName: toggle.name,
+            constraints: [],
+            sortOrder: 0,
+            parameters: {},
+        });
+        await featureStrategiesStore.createStrategyFeatureEnv({
+            strategyName: 'gradualRollout',
+            projectId: 'default',
+            environment: 'default',
+            featureName: toggle.name,
+            constraints: [],
+            sortOrder: 0,
+            parameters: {},
+        });
+
+        const maxStrategies =
+            await featureStrategiesReadModel.getMaxFeatureStrategies();
+        const maxEnvStrategies =
+            await featureStrategiesReadModel.getMaxFeatureEnvironmentStrategies();
+        expect(maxStrategies).toEqual({ feature: 'featureA', count: 2 });
+        expect(maxEnvStrategies).toEqual({
+            feature: 'featureA',
+            environment: 'default',
+            count: 2,
+        });
+    });
+
+    test('Read feature with max number of constraint values', async () => {
+        const flagA = await featureToggleStore.create('default', {
+            name: randomId(),
+            createdByUserId: 9999,
+        });
+
+        const flagB = await featureToggleStore.create('default', {
+            name: randomId(),
+            createdByUserId: 9999,
+        });
+
+        const maxConstraintValuesBefore =
+            await featureStrategiesReadModel.getMaxConstraintValues();
+        expect(maxConstraintValuesBefore).toBe(null);
+
+        const maxValueCount = 100;
+        await featureStrategiesStore.createStrategyFeatureEnv({
+            strategyName: 'gradualRollout',
+            projectId: 'default',
+            environment: 'default',
+            featureName: flagA.name,
+            constraints: [
+                {
+                    values: ['only one'],
+                    operator: 'IN',
+                    contextName: 'appName',
+                },
+                {
+                    values: Array.from({ length: maxValueCount }, (_, i) =>
+                        i.toString(),
+                    ),
+                    operator: 'IN',
+                    contextName: 'appName',
+                },
+            ],
+
+            sortOrder: 0,
+            parameters: {},
+        });
+        await featureStrategiesStore.createStrategyFeatureEnv({
+            strategyName: 'gradualRollout',
+            projectId: 'default',
+            environment: 'default',
+            featureName: flagB.name,
+            constraints: [
+                {
+                    operator: 'IN',
+                    contextName: 'appName',
+                },
+            ],
+            sortOrder: 0,
+            parameters: {},
+        });
+
+        const maxConstraintValues =
+            await featureStrategiesReadModel.getMaxConstraintValues();
+        expect(maxConstraintValues).toEqual({
+            feature: flagA.name,
+            environment: 'default',
+            count: maxValueCount,
+        });
+    });
+
+    test('Read feature strategy with max number of constraints', async () => {
+        const flagA = await featureToggleStore.create('default', {
+            name: randomId(),
+            createdByUserId: 9999,
+        });
+
+        const flagB = await featureToggleStore.create('default', {
+            name: randomId(),
+            createdByUserId: 9999,
+        });
+
+        const maxConstraintValuesBefore =
+            await featureStrategiesReadModel.getMaxConstraintsPerStrategy();
+        expect(maxConstraintValuesBefore).toBe(null);
+
+        await featureStrategiesStore.createStrategyFeatureEnv({
+            strategyName: 'gradualRollout',
+            projectId: 'default',
+            environment: 'default',
+            featureName: flagA.name,
+            constraints: [
+                {
+                    values: ['blah'],
+                    operator: 'IN',
+                    contextName: 'appName',
+                },
+                {
+                    values: ['blah'],
+                    operator: 'IN',
+                    contextName: 'appName',
+                },
+            ],
+
+            sortOrder: 0,
+            parameters: {},
+        });
+        await featureStrategiesStore.createStrategyFeatureEnv({
+            strategyName: 'gradualRollout',
+            projectId: 'default',
+            environment: 'default',
+            featureName: flagB.name,
+            constraints: [],
+            sortOrder: 0,
+            parameters: {},
+        });
+
+        const maxConstraintValues =
+            await featureStrategiesReadModel.getMaxConstraintsPerStrategy();
+        expect(maxConstraintValues).toEqual({
+            feature: flagA.name,
+            environment: 'default',
+            count: 2,
+        });
     });
 });

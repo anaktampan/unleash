@@ -9,7 +9,7 @@ import { useRequiredPathParam } from 'hooks/useRequiredPathParam';
 const StyledBox = styled(Box)(({ theme }) => ({
     display: 'grid',
     gap: theme.spacing(2),
-    gridTemplateColumns: 'repeat(5, 1fr)',
+    gridTemplateColumns: 'repeat(4, 1fr)',
     flexWrap: 'wrap',
     [theme.breakpoints.down('lg')]: {
         gridTemplateColumns: 'repeat(2, 1fr)',
@@ -89,10 +89,10 @@ export const ProjectInsightsStats = ({ stats }: IProjectStatsProps) => {
                 percentage
             >
                 <HelpPopper id='avg-time-to-prod'>
-                    How long did it take on average from a feature toggle was
+                    How long did it take on average from a feature flag was
                     created until it was enabled in an environment of type
-                    production. This is calculated only from feature toggles
-                    with the type of "release".
+                    production. This is calculated only from feature flags with
+                    the type of "release".
                 </HelpPopper>
             </StatusBox>
             <StatusBox
@@ -101,18 +101,6 @@ export const ProjectInsightsStats = ({ stats }: IProjectStatsProps) => {
                 change={createdCurrentWindow - createdPastWindow}
             >
                 <NavigationBar to={`/projects/${projectId}`}>
-                    <KeyboardArrowRight />
-                </NavigationBar>
-            </StatusBox>
-
-            <StatusBox
-                title='Stale flags'
-                boxText={String(projectActivityCurrentWindow)}
-                change={
-                    projectActivityCurrentWindow - projectActivityPastWindow
-                }
-            >
-                <NavigationBar to={`/projects/${projectId}/health`}>
                     <KeyboardArrowRight />
                 </NavigationBar>
             </StatusBox>

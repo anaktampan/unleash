@@ -103,7 +103,7 @@ export default class ClientInstanceService {
     ): Promise<void> {
         const value = await clientRegisterSchema.validateAsync(data);
         value.clientIp = clientIp;
-        value.createdBy = clientIp;
+        value.createdBy = SYSTEM_USER.username!;
         this.seenClients[this.clientKey(value)] = value;
         this.eventStore.emit(CLIENT_REGISTER, value);
     }
@@ -115,9 +115,10 @@ export default class ClientInstanceService {
             if (appsToAnnounce.length > 0) {
                 const events = appsToAnnounce.map((app) => ({
                     type: APPLICATION_CREATED,
-                    createdBy: app.createdBy || SYSTEM_USER.username,
+                    createdBy: app.createdBy || SYSTEM_USER.username!,
                     data: app,
                     createdByUserId: app.createdByUserId || SYSTEM_USER.id,
+                    ip: '', // TODO: fix this, how do we get the ip from the client? This comes from a row in the DB
                 }));
                 await this.eventStore.batchStore(events);
             }
@@ -271,6 +272,17 @@ export default class ClientInstanceService {
 
     async getOutdatedSdks(): Promise<OutdatedSdksSchema['sdks']> {
         const sdkApps = await this.clientInstanceStore.groupApplicationsBySdk();
+
+        return sdkApps.filter((sdkApp) => isOutdatedSdk(sdkApp.sdkVersion));
+    }
+
+    async getOutdatedSdksByProject(
+        projectId: string,
+    ): Promise<OutdatedSdksSchema['sdks']> {
+        const sdkApps =
+            await this.clientInstanceStore.groupApplicationsBySdkAndProject(
+                projectId,
+            );
 
         return sdkApps.filter((sdkApp) => isOutdatedSdk(sdkApp.sdkVersion));
     }

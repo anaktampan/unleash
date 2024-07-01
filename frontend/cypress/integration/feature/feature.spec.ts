@@ -5,9 +5,6 @@ describe('feature', () => {
     const featureToggleName = `unleash-e2e-${randomId}`;
     const projectName = `unleash-e2e-project-${randomId}`;
 
-    const variant1 = 'variant1';
-    const variant2 = 'variant2';
-
     before(() => {
         cy.runBefore();
         cy.login_UI();
@@ -15,6 +12,22 @@ describe('feature', () => {
     });
 
     after(() => {
+        cy.on('uncaught:exception', (err) => {
+            if (
+                err.message.includes(
+                    'ResizeObserver loop completed with undelivered notifications',
+                )
+            ) {
+                console.log(
+                    'Ignored an uncaught resize observer error:',
+                    err.message,
+                );
+                // ignore resize observer errors
+                // https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver#observation_errors
+                // returning false here prevents Cypress from failing the test
+                return false;
+            }
+        });
         cy.deleteFeature_API(featureToggleName, projectName);
         cy.deleteProject_API(projectName);
     });
@@ -24,7 +37,7 @@ describe('feature', () => {
         cy.visit('/features');
     });
 
-    it('can create a feature toggle', () => {
+    it('can create a feature flag', () => {
         cy.createFeature_UI(featureToggleName, true, projectName);
         cy.url().should('include', featureToggleName);
     });
@@ -32,7 +45,7 @@ describe('feature', () => {
     it('gives an error if a toggle exists with the same name', () => {
         cy.createFeature_UI(featureToggleName, false, projectName);
         cy.get("[data-testid='INPUT_ERROR_TEXT']").contains(
-            'A toggle with that name already exists',
+            'A flag with that name already exists',
         );
     });
 
@@ -59,57 +72,5 @@ describe('feature', () => {
                 ),
             );
         });
-    });
-
-    it('can add variants to the development environment', () => {
-        cy.addVariantsToFeature_UI(
-            featureToggleName,
-            [variant1, variant2],
-            projectName,
-        );
-    });
-
-    it('can update variants', () => {
-        cy.visit(
-            `/projects/${projectName}/features/${featureToggleName}/variants`,
-        );
-
-        cy.get('[data-testid=EDIT_VARIANTS_BUTTON]').click();
-        cy.get('[data-testid=VARIANT_NAME_INPUT]')
-            .last()
-            .children()
-            .find('input')
-            .should('have.attr', 'disabled');
-        cy.get('[data-testid=VARIANT_WEIGHT_CHECK]')
-            .last()
-            .find('input')
-            .check();
-        cy.get('[data-testid=VARIANT_WEIGHT_INPUT]').last().clear().type('15');
-
-        cy.intercept(
-            'PATCH',
-            `/api/admin/projects/${projectName}/features/${featureToggleName}/environments/development/variants`,
-            (req) => {
-                expect(req.body[0].op).to.equal('replace');
-                expect(req.body[0].path).to.equal('/1/weightType');
-                expect(req.body[0].value).to.equal('fix');
-                expect(req.body[1].op).to.equal('replace');
-                expect(req.body[1].path).to.equal('/1/weight');
-                expect(req.body[1].value).to.equal(150);
-                expect(req.body[2].op).to.equal('replace');
-                expect(req.body[2].path).to.equal('/0/weight');
-                expect(req.body[2].value).to.equal(850);
-            },
-        ).as('variantUpdate');
-
-        cy.get('[data-testid=DIALOGUE_CONFIRM_ID]').click();
-        cy.get(`[data-testid=VARIANT_WEIGHT_${variant2}]`).should(
-            'have.text',
-            '15 %',
-        );
-    });
-
-    it('can delete variants', () => {
-        cy.deleteVariant_UI(featureToggleName, variant2, projectName);
     });
 });

@@ -94,10 +94,7 @@ export const ProjectHealthChart: VFC<IProjectHealthChartProps> = ({
         : projectsData;
     const notEnoughData = useMemo(
         () =>
-            !isLoading &&
-            (projectsData.datasets.some((d) => d.data.length > 1)
-                ? false
-                : true),
+            !isLoading && !projectsData.datasets.some((d) => d.data.length > 1),
         [projectsData, isLoading],
     );
     const data =
@@ -113,6 +110,41 @@ export const ProjectHealthChart: VFC<IProjectHealthChartProps> = ({
                     ? {}
                     : {
                           parsing: { yAxisKey: 'health', xAxisKey: 'date' },
+                          scales: {
+                              y: {
+                                  min: 0,
+                                  max: 100,
+                                  beginAtZero: true,
+                                  type: 'linear',
+                                  grid: {
+                                      color: theme.palette.divider,
+                                      borderColor: theme.palette.divider,
+                                  },
+                                  ticks: {
+                                      color: theme.palette.text.secondary,
+                                      display: true,
+                                      precision: 0,
+                                  },
+                              },
+                              x: {
+                                  type: 'time',
+                                  time: {
+                                      unit: 'week',
+                                      tooltipFormat: 'PPP',
+                                  },
+                                  grid: {
+                                      color: 'transparent',
+                                      borderColor: 'transparent',
+                                  },
+                                  ticks: {
+                                      color: theme.palette.text.secondary,
+                                      display: true,
+                                      source: 'data',
+                                      maxRotation: 90,
+                                      minRotation: 23.5,
+                                  },
+                              },
+                          },
                       }
             }
             cover={notEnoughData ? <NotEnoughData /> : isLoading}

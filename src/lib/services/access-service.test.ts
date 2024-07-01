@@ -201,7 +201,7 @@ test('user with custom root role should get a user root role', async () => {
     expect(role.name).toBe('custom-root-role');
     const events = await eventStore.getEvents();
     expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({
+    expect(events[0]).toMatchObject({
         type: ROLE_CREATED,
         createdBy: SYSTEM_USER_AUDIT.username,
         createdByUserId: SYSTEM_USER.id,
@@ -284,4 +284,32 @@ describe('addAccessToProject', () => {
             ),
         ).rejects.toThrow(BadDataError);
     });
+});
+
+test('should return true if user has admin role', async () => {
+    const { accessService, accessStore } = getSetup();
+
+    const userId = 1;
+    accessStore.getRolesForUserId = jest
+        .fn()
+        .mockResolvedValue([{ id: 1, name: 'ADMIN', type: 'custom' }]);
+
+    const result = await accessService.isRootAdmin(userId);
+
+    expect(result).toBe(true);
+    expect(accessStore.getRolesForUserId).toHaveBeenCalledWith(userId);
+});
+
+test('should return false if user does not have admin role', async () => {
+    const { accessService, accessStore } = getSetup();
+
+    const userId = 2;
+    accessStore.getRolesForUserId = jest
+        .fn()
+        .mockResolvedValue([{ id: 2, name: 'user', type: 'custom' }]);
+
+    const result = await accessService.isRootAdmin(userId);
+
+    expect(result).toBe(false);
+    expect(accessStore.getRolesForUserId).toHaveBeenCalledWith(userId);
 });

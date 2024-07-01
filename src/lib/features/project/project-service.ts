@@ -1,5 +1,6 @@
 import { subDays } from 'date-fns';
 import { ValidationError } from 'joi';
+import createSlug from 'slug';
 import type { IAuditUser, IUser } from '../../types/user';
 import type {
     AccessService,
@@ -50,6 +51,8 @@ import {
     RoleName,
     SYSTEM_USER_ID,
     type ProjectCreated,
+    type IProjectOwnersReadModel,
+    ADMIN,
 } from '../../types';
 import type {
     IProjectAccessModel,
@@ -76,8 +79,7 @@ import type {
     IProjectEnterpriseSettingsUpdate,
     IProjectQuery,
 } from './project-store-type';
-
-const getCreatedBy = (user: IUser) => user.email || user.username || 'unknown';
+import type { IProjectFlagCreatorsReadModel } from './project-flag-creators-read-model.type';
 
 type Days = number;
 type Count = number;
@@ -111,6 +113,10 @@ function includes(
 
 export default class ProjectService {
     private projectStore: IProjectStore;
+
+    private projectOwnersReadModel: IProjectOwnersReadModel;
+
+    private projectFlagCreatorsReadModel: IProjectFlagCreatorsReadModel;
 
     private accessService: AccessService;
 
@@ -147,6 +153,8 @@ export default class ProjectService {
     constructor(
         {
             projectStore,
+            projectOwnersReadModel,
+            projectFlagCreatorsReadModel,
             eventStore,
             featureToggleStore,
             environmentStore,
@@ -157,6 +165,8 @@ export default class ProjectService {
         }: Pick<
             IUnleashStores,
             | 'projectStore'
+            | 'projectOwnersReadModel'
+            | 'projectFlagCreatorsReadModel'
             | 'eventStore'
             | 'featureToggleStore'
             | 'environmentStore'
@@ -174,6 +184,8 @@ export default class ProjectService {
         privateProjectChecker: IPrivateProjectChecker,
     ) {
         this.projectStore = projectStore;
+        this.projectOwnersReadModel = projectOwnersReadModel;
+        this.projectFlagCreatorsReadModel = projectFlagCreatorsReadModel;
         this.environmentStore = environmentStore;
         this.featureEnvironmentStore = featureEnvironmentStore;
         this.accessService = accessService;
@@ -218,6 +230,18 @@ export default class ProjectService {
         return projects;
     }
 
+    async addOwnersToProjects(
+        projects: IProjectWithCount[],
+    ): Promise<IProjectWithCount[]> {
+        const anonymizeProjectOwners = this.flagResolver.isEnabled(
+            'anonymizeProjectOwners',
+        );
+        return this.projectOwnersReadModel.addOwners(
+            projects,
+            anonymizeProjectOwners,
+        );
+    }
+
     async getProject(id: string): Promise<IProject> {
         return this.projectStore.get(id);
     }
@@ -248,61 +272,89 @@ export default class ProjectService {
         return featureNaming;
     };
 
+    private async validateEnvironmentsExist(environments: string[]) {
+        const projectsAndExistence = await Promise.all(
+            environments.map(async (env) => [
+                env,
+                await this.environmentStore.exists(env),
+            ]),
+        );
+
+        const invalidEnvs = projectsAndExistence
+            .filter(([_, exists]) => !exists)
+            .map(([env]) => env);
+
+        if (invalidEnvs.length > 0) {
+            throw new BadDataError(
+                `These environments do not exist: ${invalidEnvs
+                    .map((env) => `'${env}'`)
+                    .join(', ')}.`,
+            );
+        }
+    }
+
     async validateProjectEnvironments(environments: string[] | undefined) {
-        if (
-            this.flagResolver.isEnabled('createProjectWithEnvironmentConfig') &&
-            environments
-        ) {
+        if (environments) {
             if (environments.length === 0) {
                 throw new BadDataError(
                     'A project must always have at least one environment.',
                 );
             }
 
-            const projectsAndExistence = await Promise.all(
-                environments.map(async (env) => [
-                    env,
-                    await this.environmentStore.exists(env),
-                ]),
-            );
-
-            const invalidEnvs = projectsAndExistence
-                .filter(([_, exists]) => !exists)
-                .map(([env]) => env);
-
-            if (invalidEnvs.length > 0) {
-                throw new BadDataError(
-                    `These environments do not exist and can not be selected for the project: ${invalidEnvs
-                        .map((env) => `'${env}'`)
-                        .join(', ')}.`,
-                );
-            }
+            await this.validateEnvironmentsExist(environments);
         }
+    }
+    async generateProjectId(name: string): Promise<string> {
+        const slug = createSlug(name).slice(0, 90);
+        const generateUniqueId = async (suffix?: number) => {
+            const id = suffix ? `${slug}-${suffix}` : slug;
+            if (await this.projectStore.hasProject(id)) {
+                return await generateUniqueId((suffix ?? 0) + 1);
+            } else {
+                return id;
+            }
+        };
+        return generateUniqueId();
     }
 
     async createProject(
         newProject: CreateProject,
         user: IUser,
         auditUser: IAuditUser,
-        enableChangeRequestsForSpecifiedEnvironments: () => Promise<void> = async () => {},
+        enableChangeRequestsForSpecifiedEnvironments: (
+            environments: CreateProject['changeRequestEnvironments'],
+        ) => Promise<
+            ProjectCreated['changeRequestEnvironments']
+        > = async () => {
+            return [];
+        },
     ): Promise<ProjectCreated> {
-        await this.validateProjectEnvironments(newProject.environments);
+        const validateData = async () => {
+            await this.validateProjectEnvironments(newProject.environments);
 
-        const validatedData = await projectSchema.validateAsync(newProject);
-        const data = this.removeModeForNonEnterprise(validatedData);
-        await this.validateUniqueId(data.id);
+            if (!newProject.id?.trim()) {
+                newProject.id = await this.generateProjectId(newProject.name);
+                return await projectSchema.validateAsync(newProject);
+            } else {
+                const validatedData =
+                    await projectSchema.validateAsync(newProject);
+                await this.validateUniqueId(validatedData.id);
+                return validatedData;
+            }
+        };
+
+        const validatedData = await validateData();
+        const data = this.removePropertiesForNonEnterprise(validatedData);
 
         await this.projectStore.create(data);
 
-        const envsToEnable =
-            this.flagResolver.isEnabled('createProjectWithEnvironmentConfig') &&
-            newProject.environments?.length
-                ? newProject.environments
-                : (
-                      await this.environmentStore.getAll({
-                          enabled: true,
-                      })
-                  ).map((env) => env.name);
+        const envsToEnable = newProject.environments?.length
+            ? newProject.environments
+            : (
+                  await this.environmentStore.getAll({
+                      enabled: true,
+                  })
+              ).map((env) => env.name);
 
         await Promise.all(
             envsToEnable.map(async (env) => {
@@ -310,14 +362,28 @@ export default class ProjectService {
             }),
         );
 
-        await enableChangeRequestsForSpecifiedEnvironments();
+        if (this.isEnterprise) {
+            if (newProject.changeRequestEnvironments) {
+                await this.validateEnvironmentsExist(
+                    newProject.changeRequestEnvironments.map((env) => env.name),
+                );
+                const changeRequestEnvironments =
+                    await enableChangeRequestsForSpecifiedEnvironments(
+                        newProject.changeRequestEnvironments,
+                    );
+
+                data.changeRequestEnvironments = changeRequestEnvironments;
+            } else {
+                data.changeRequestEnvironments = [];
+            }
+        }
 
         await this.accessService.createDefaultProjectRoles(user, data.id);
 
         await this.eventService.storeEvent(
             new ProjectCreatedEvent({
                 data,
-                project: newProject.id,
+                project: data.id,
                 auditUser,
             }),
         );
@@ -449,24 +515,24 @@ export default class ProjectService {
             );
         }
 
-        const toggles = await this.featureToggleStore.getAll({
+        const flags = await this.featureToggleStore.getAll({
             project: id,
             archived: false,
         });
 
-        if (toggles.length > 0) {
+        if (flags.length > 0) {
             throw new InvalidOperationError(
-                'You can not delete a project with active feature toggles',
+                'You can not delete a project with active feature flags',
             );
         }
 
-        const archivedToggles = await this.featureToggleStore.getAll({
+        const archivedFlags = await this.featureToggleStore.getAll({
             project: id,
             archived: true,
         });
 
         this.featureToggleService.deleteFeatures(
-            archivedToggles.map((toggle) => toggle.name),
+            archivedFlags.map((flag) => flag.name),
             id,
             auditUser,
         );
@@ -760,16 +826,21 @@ export default class ProjectService {
     }
 
     private async isAllowedToAddAccess(
-        userAddingAccess: number,
+        userAddingAccess: IAuditUser,
         projectId: string,
         rolesBeingAdded: number[],
     ): Promise<boolean> {
+        const userPermissions =
+            await this.accessService.getPermissionsForUser(userAddingAccess);
+        if (userPermissions.some(({ permission }) => permission === ADMIN)) {
+            return true;
+        }
         const userRoles = await this.accessService.getAllProjectRolesForUser(
-            userAddingAccess,
+            userAddingAccess.id,
             projectId,
         );
         if (
-            this.isAdmin(userAddingAccess, userRoles) ||
+            this.isAdmin(userAddingAccess.id, userRoles) ||
             this.isProjectOwner(userRoles, projectId)
         ) {
             return true;
@@ -786,7 +857,7 @@ export default class ProjectService {
         users: number[],
         auditUser: IAuditUser,
     ): Promise<void> {
-        if (await this.isAllowedToAddAccess(auditUser.id, projectId, roles)) {
+        if (await this.isAllowedToAddAccess(auditUser, projectId, roles)) {
             await this.accessService.addAccessToProject(
                 roles,
                 groups,
@@ -837,7 +908,7 @@ export default class ProjectService {
             await this.validateAtLeastOneOwner(projectId, ownerRole);
         }
         const isAllowedToAssignRoles = await this.isAllowedToAddAccess(
-            auditUser.id,
+            auditUser,
             projectId,
             newRoles,
         );
@@ -888,7 +959,7 @@ export default class ProjectService {
             await this.validateAtLeastOneOwner(projectId, ownerRole);
         }
         const isAllowedToAssignRoles = await this.isAllowedToAddAccess(
-            auditUser.id,
+            auditUser,
             projectId,
             newRoles,
         );
@@ -969,34 +1040,34 @@ export default class ProjectService {
 
     /** @deprecated use projectInsightsService instead */
     async getDoraMetrics(projectId: string): Promise<ProjectDoraMetricsSchema> {
-        const activeFeatureToggles = (
+        const activeFeatureFlags = (
             await this.featureToggleStore.getAll({ project: projectId })
         ).map((feature) => feature.name);
 
-        const archivedFeatureToggles = (
+        const archivedFeatureFlags = (
             await this.featureToggleStore.getAll({
                 project: projectId,
                 archived: true,
             })
         ).map((feature) => feature.name);
 
-        const featureToggleNames = [
-            ...activeFeatureToggles,
-            ...archivedFeatureToggles,
+        const featureFlagNames = [
+            ...activeFeatureFlags,
+            ...archivedFeatureFlags,
         ];
 
         const projectAverage = calculateAverageTimeToProd(
             await this.projectStatsStore.getTimeToProdDates(projectId),
         );
 
-        const toggleAverage =
+        const flagAverage =
             await this.projectStatsStore.getTimeToProdDatesForFeatureToggles(
                 projectId,
-                featureToggleNames,
+                featureFlagNames,
             );
 
         return {
-            features: toggleAverage,
+            features: flagAverage,
             projectAverage: projectAverage,
         };
     }
@@ -1007,6 +1078,10 @@ export default class ProjectService {
         const applications =
             await this.projectStore.getApplicationsByProject(searchParams);
         return applications;
+    }
+
+    async getProjectFlagCreators(projectId: string) {
+        return this.projectFlagCreatorsReadModel.getFlagCreators(projectId);
     }
 
     async changeRole(
@@ -1357,11 +1432,11 @@ export default class ProjectService {
     }
 
     // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-    removeModeForNonEnterprise(data): any {
+    removePropertiesForNonEnterprise(data): any {
         if (this.isEnterprise) {
             return data;
         }
-        const { mode, ...proData } = data;
+        const { mode, changeRequestEnvironments, ...proData } = data;
         return proData;
     }
 }

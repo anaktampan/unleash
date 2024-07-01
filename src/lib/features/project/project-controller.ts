@@ -18,6 +18,8 @@ import {
     createResponseSchema,
     type DeprecatedProjectOverviewSchema,
     deprecatedProjectOverviewSchema,
+    outdatedSdksSchema,
+    type OutdatedSdksSchema,
     type ProjectDoraMetricsSchema,
     projectDoraMetricsSchema,
     projectOverviewSchema,
@@ -41,17 +43,25 @@ import { projectApplicationsQueryParameters } from '../../openapi/spec/project-a
 import { normalizeQueryParams } from '../feature-search/search-utils';
 import ProjectInsightsController from '../project-insights/project-insights-controller';
 import FeatureLifecycleController from '../feature-lifecycle/feature-lifecycle-controller';
+import type ClientInstanceService from '../metrics/instance/instance-service';
+import {
+    projectFlagCreatorsSchema,
+    type ProjectFlagCreatorsSchema,
+} from '../../openapi/spec/project-flag-creators-schema';
 
 export default class ProjectController extends Controller {
     private projectService: ProjectService;
 
     private openApiService: OpenApiService;
 
+    private clientInstanceService: ClientInstanceService;
+
     private flagResolver: IFlagResolver;
 
     constructor(config: IUnleashConfig, services: IUnleashServices, db: Db) {
         super(config);
         this.projectService = services.projectService;
+        this.clientInstanceService = services.clientInstanceService;
         this.openApiService = services.openApiService;
         this.flagResolver = config.flagResolver;
 
@@ -146,7 +156,7 @@ export default class ProjectController extends Controller {
             permission: NONE,
             middleware: [
                 this.openApiService.validPath({
-                    tags: ['Unstable'],
+                    tags: ['Projects'],
                     operationId: 'getProjectApplications',
                     summary: 'Get a list of all applications for a project.',
                     description:
@@ -155,6 +165,46 @@ export default class ProjectController extends Controller {
                     responses: {
                         200: createResponseSchema('projectApplicationsSchema'),
                         ...getStandardResponses(401, 403, 404),
+                    },
+                }),
+            ],
+        });
+
+        this.route({
+            method: 'get',
+            path: '/:projectId/flag-creators',
+            handler: this.getProjectFlagCreators,
+            permission: NONE,
+            middleware: [
+                this.openApiService.validPath({
+                    tags: ['Projects'],
+                    operationId: 'getProjectFlagCreators',
+                    summary: 'Get a list of all flag creators for a project.',
+                    description:
+                        'This endpoint returns every user who created a flag in the project.',
+                    responses: {
+                        200: createResponseSchema('projectFlagCreatorsSchema'),
+                        ...getStandardResponses(401, 403, 404),
+                    },
+                }),
+            ],
+        });
+
+        this.route({
+            method: 'get',
+            path: '/:projectId/sdks/outdated',
+            handler: this.getOutdatedProjectSdks,
+            permission: NONE,
+            middleware: [
+                this.openApiService.validPath({
+                    tags: ['Projects'],
+                    operationId: 'getOutdatedProjectSdks',
+                    summary: 'Get outdated project SDKs',
+                    description:
+                        'Returns a list of the outdated SDKS with the applications using them.',
+                    responses: {
+                        200: createResponseSchema('outdatedSdksSchema'),
+                        ...getStandardResponses(404),
                     },
                 }),
             ],
@@ -197,11 +247,14 @@ export default class ProjectController extends Controller {
             user.id,
         );
 
+        const projectsWithOwners =
+            await this.projectService.addOwnersToProjects(projects);
+
         this.openApiService.respondWithValidation(
             200,
             res,
             projectsSchema.$id,
-            { version: 1, projects: serializeDates(projects) },
+            { version: 1, projects: serializeDates(projectsWithOwners) },
         );
     }
 
@@ -296,6 +349,41 @@ export default class ProjectController extends Controller {
             res,
             projectApplicationsSchema.$id,
             serializeDates(applications),
+        );
+    }
+
+    async getProjectFlagCreators(
+        req: IAuthRequest<IProjectParam>,
+        res: Response<ProjectFlagCreatorsSchema>,
+    ): Promise<void> {
+        const { projectId } = req.params;
+
+        const flagCreators =
+            await this.projectService.getProjectFlagCreators(projectId);
+
+        this.openApiService.respondWithValidation(
+            200,
+            res,
+            projectFlagCreatorsSchema.$id,
+            serializeDates(flagCreators),
+        );
+    }
+
+    async getOutdatedProjectSdks(
+        req: IAuthRequest<IProjectParam>,
+        res: Response<OutdatedSdksSchema>,
+    ) {
+        const { projectId } = req.params;
+        const outdatedSdks =
+            await this.clientInstanceService.getOutdatedSdksByProject(
+                projectId,
+            );
+
+        this.openApiService.respondWithValidation(
+            200,
+            res,
+            outdatedSdksSchema.$id,
+            { sdks: outdatedSdks },
         );
     }
 }

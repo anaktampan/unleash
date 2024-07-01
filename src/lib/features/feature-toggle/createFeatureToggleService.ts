@@ -53,12 +53,14 @@ import {
 } from '../dependent-features/createDependentFeaturesService';
 import { createEventsService } from '../events/createEventsService';
 import { EventEmitter } from 'stream';
+import { FeatureLifecycleReadModel } from '../feature-lifecycle/feature-lifecycle-read-model';
+import { FakeFeatureLifecycleReadModel } from '../feature-lifecycle/fake-feature-lifecycle-read-model';
 
 export const createFeatureToggleService = (
     db: Db,
     config: IUnleashConfig,
 ): FeatureToggleService => {
-    const { getLogger, eventBus, flagResolver } = config;
+    const { getLogger, eventBus, flagResolver, resourceLimits } = config;
     const featureStrategiesStore = new FeatureStrategiesStore(
         db,
         eventBus,
@@ -122,6 +124,11 @@ export const createFeatureToggleService = (
 
     const dependentFeaturesReadModel = new DependentFeaturesReadModel(db);
 
+    const featureLifecycleReadModel = new FeatureLifecycleReadModel(
+        db,
+        config.flagResolver,
+    );
+
     const dependentFeaturesService = createDependentFeaturesService(config)(db);
 
     const featureToggleService = new FeatureToggleService(
@@ -135,7 +142,7 @@ export const createFeatureToggleService = (
             contextFieldStore,
             strategyStore,
         },
-        { getLogger, flagResolver, eventBus },
+        { getLogger, flagResolver, eventBus, resourceLimits },
         segmentService,
         accessService,
         eventService,
@@ -143,14 +150,13 @@ export const createFeatureToggleService = (
         privateProjectChecker,
         dependentFeaturesReadModel,
         dependentFeaturesService,
+        featureLifecycleReadModel,
     );
     return featureToggleService;
 };
 
-export const createFakeFeatureToggleService = (
-    config: IUnleashConfig,
-): FeatureToggleService => {
-    const { getLogger, flagResolver } = config;
+export const createFakeFeatureToggleService = (config: IUnleashConfig) => {
+    const { getLogger, flagResolver, resourceLimits } = config;
     const eventStore = new FakeEventStore();
     const strategyStore = new FakeStrategiesStore();
     const featureStrategiesStore = new FakeFeatureStrategiesStore();
@@ -185,6 +191,8 @@ export const createFakeFeatureToggleService = (
     const fakePrivateProjectChecker = createFakePrivateProjectChecker();
     const dependentFeaturesReadModel = new FakeDependentFeaturesReadModel();
     const dependentFeaturesService = createFakeDependentFeaturesService(config);
+    const featureLifecycleReadModel = new FakeFeatureLifecycleReadModel();
+
     const featureToggleService = new FeatureToggleService(
         {
             featureStrategiesStore,
@@ -196,7 +204,12 @@ export const createFakeFeatureToggleService = (
             contextFieldStore,
             strategyStore,
         },
-        { getLogger, flagResolver, eventBus: new EventEmitter() },
+        {
+            getLogger,
+            flagResolver,
+            eventBus: new EventEmitter(),
+            resourceLimits,
+        },
         segmentService,
         accessService,
         eventService,
@@ -204,6 +217,7 @@ export const createFakeFeatureToggleService = (
         fakePrivateProjectChecker,
         dependentFeaturesReadModel,
         dependentFeaturesService,
+        featureLifecycleReadModel,
     );
-    return featureToggleService;
+    return { featureToggleService, featureToggleStore };
 };

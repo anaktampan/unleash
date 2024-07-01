@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router';
-import useProject from 'hooks/api/getters/useProject/useProject';
 import useLoading from 'hooks/useLoading';
 import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
 import {
@@ -21,7 +20,7 @@ import useQueryParams from 'hooks/useQueryParams';
 import { useEffect, useState } from 'react';
 import ProjectEnvironment from '../ProjectEnvironment/ProjectEnvironment';
 import { ProjectFeaturesArchive } from './ProjectFeaturesArchive/ProjectFeaturesArchive';
-import ProjectOverview from './ProjectOverview';
+import ProjectFlags from './ProjectFlags';
 import ProjectHealth from './ProjectHealth/ProjectHealth';
 import PermissionIconButton from 'component/common/PermissionIconButton/PermissionIconButton';
 import { UPDATE_FEATURE } from 'component/providers/AccessProvider/permissions';
@@ -38,13 +37,12 @@ import { ImportModal } from './Import/ImportModal';
 import { IMPORT_BUTTON } from 'utils/testIds';
 import { EnterpriseBadge } from 'component/common/EnterpriseBadge/EnterpriseBadge';
 import { Badge } from 'component/common/Badge/Badge';
-import { ProjectDoraMetrics } from './ProjectDoraMetrics/ProjectDoraMetrics';
 import type { UiFlags } from 'interfaces/uiConfig';
 import { HiddenProjectIconWithTooltip } from './HiddenProjectIconWithTooltip/HiddenProjectIconWithTooltip';
 import { ChangeRequestPlausibleProvider } from 'component/changeRequest/ChangeRequestContext';
 import { ProjectApplications } from '../ProjectApplications/ProjectApplications';
-import { useUiFlag } from 'hooks/useUiFlag';
 import { ProjectInsights } from './ProjectInsights/ProjectInsights';
+import useProjectOverview from 'hooks/api/getters/useProjectOverview/useProjectOverview';
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
     position: 'absolute',
@@ -67,7 +65,7 @@ interface ITab {
 export const Project = () => {
     const projectId = useRequiredPathParam('projectId');
     const params = useQueryParams();
-    const { project, loading, error, refetch } = useProject(projectId);
+    const { project, loading, error, refetch } = useProjectOverview(projectId);
     const ref = useLoading(loading, '[data-loading-project=true]');
     const { setToastData, setToastApiError } = useToast();
     const [modalOpen, setModalOpen] = useState(false);
@@ -78,8 +76,6 @@ export const Project = () => {
     const projectName = project?.name || projectId;
     const { favorite, unfavorite } = useFavoriteProjectsApi();
 
-    const projectOverviewRefactor = useUiFlag('projectOverviewRefactor');
-
     const [showDelDialog, setShowDelDialog] = useState(false);
 
     const [
@@ -89,20 +85,15 @@ export const Project = () => {
 
     const tabs: ITab[] = [
         {
-            title: 'Overview',
+            title: 'Flags',
             path: basePath,
-            name: 'overview',
+            name: 'flags',
         },
-        ...(projectOverviewRefactor
-            ? [
-                  {
-                      title: 'Insights',
-                      path: `${basePath}/insights`,
-                      name: 'insights',
-                      new: true,
-                  },
-              ]
-            : []),
+        {
+            title: 'Insights',
+            path: `${basePath}/insights`,
+            name: 'insights',
+        },
         {
             title: 'Health',
             path: `${basePath}/health`,
@@ -119,16 +110,6 @@ export const Project = () => {
             name: 'change-request',
             isEnterprise: true,
         },
-        ...(!projectOverviewRefactor
-            ? [
-                  {
-                      title: 'Metrics',
-                      path: `${basePath}/metrics`,
-                      name: 'dora',
-                      isEnterprise: true,
-                  },
-              ]
-            : []),
         {
             title: 'Applications',
             path: `${basePath}/applications`,
@@ -319,9 +300,7 @@ export const Project = () => {
                 />
                 <Route path='environments' element={<ProjectEnvironment />} />
                 <Route path='archive' element={<ProjectFeaturesArchive />} />
-                {Boolean(projectOverviewRefactor) && (
-                    <Route path='insights' element={<ProjectInsights />} />
-                )}
+                <Route path='insights' element={<ProjectInsights />} />
                 <Route path='logs' element={<ProjectLog />} />
                 <Route
                     path='change-requests'
@@ -343,11 +322,8 @@ export const Project = () => {
                     }
                 />
                 <Route path='settings/*' element={<ProjectSettings />} />
-                {Boolean(!projectOverviewRefactor) && (
-                    <Route path='metrics' element={<ProjectDoraMetrics />} />
-                )}
                 <Route path='applications' element={<ProjectApplications />} />
-                <Route path='*' element={<ProjectOverview />} />
+                <Route path='*' element={<ProjectFlags />} />
             </Routes>
             <ImportModal
                 open={modalOpen}

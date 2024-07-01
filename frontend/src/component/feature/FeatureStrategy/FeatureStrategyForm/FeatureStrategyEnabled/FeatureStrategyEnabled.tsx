@@ -10,30 +10,35 @@ interface IFeatureStrategyEnabledProps {
     projectId: string;
     featureId: string;
     environmentId: string;
+    isChangeRequest?: boolean;
 }
 
 export const FeatureStrategyEnabled: FC<IFeatureStrategyEnabledProps> = ({
     projectId,
     featureId,
     environmentId,
-    children,
 }) => {
     const featurePagePath = formatFeaturePath(projectId, featureId);
     const { feature } = useFeature(projectId, featureId);
 
-    const featurePageLink = (
-        <Link to={featurePagePath}>feature toggle page</Link>
-    );
+    const featurePageLink = <Link to={featurePagePath}>feature flag page</Link>;
 
     return (
         <ConditionallyRender
             condition={isFeatureEnabledInEnvironment(feature, environmentId)}
-            show={children}
+            show={
+                <Alert severity='success'>
+                    This feature flag is currently enabled in the{' '}
+                    <strong>{environmentId}</strong> environment. Any changes
+                    made here will be available to users as soon as you hit{' '}
+                    <strong>save</strong>.
+                </Alert>
+            }
             elseShow={
                 <Alert severity='warning'>
-                    This feature toggle is currently disabled in the{' '}
+                    This feature flag is currently disabled in the{' '}
                     <strong>{environmentId}</strong> environment. Any changes
-                    made here will not take effect until the toggle has been
+                    made here will not take effect until the flag has been
                     enabled on the {featurePageLink}.
                 </Alert>
             }

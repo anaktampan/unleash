@@ -24,4 +24,8 @@ export interface ResourceLimitsSchema {
     signalTokensPerEndpoint: number;
     /** The maximum number of strategy segments allowed. */
     strategySegments: number;
+    /** The maximum number of feature environment strategies allowed. */
+    featureEnvironmentStrategies: number;
+    /** The maximum number of values for a single constraint. */
+    constraintValues: number;
 }

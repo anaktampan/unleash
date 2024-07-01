@@ -15,7 +15,7 @@ export const userSchema = {
         },
         isAPI: {
             description:
-                '(Deprecated): Used internally to know which operations the user should be allowed to perform',
+                'Deprecated in v5. Used internally to know which operations the user should be allowed to perform',
             type: 'boolean',
             example: true,
             deprecated: true,
@@ -38,7 +38,7 @@ export const userSchema = {
             nullable: true,
         },
         imageUrl: {
-            description: `URL used for the userprofile image`,
+            description: `URL used for the user profile image`,
             type: 'string',
             example: 'https://example.com/242x200.png',
         },

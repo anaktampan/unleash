@@ -41,6 +41,10 @@ import {
 import FakeFeatureTagStore from '../../../test/fixtures/fake-feature-tag-store';
 import FeatureTypeStore from '../../db/feature-type-store';
 import FakeFeatureTypeStore from '../../../test/fixtures/fake-feature-type-store';
+import { ProjectOwnersReadModel } from './project-owners-read-model';
+import { FakeProjectOwnersReadModel } from './fake-project-owners-read-model';
+import { FakeProjectFlagCreatorsReadModel } from './fake-project-flag-creators-read-model';
+import { ProjectFlagCreatorsReadModel } from './project-flag-creators-read-model';
 
 export const createProjectService = (
     db: Db,
@@ -54,6 +58,8 @@ export const createProjectService = (
         getLogger,
         flagResolver,
     );
+    const projectOwnersReadModel = new ProjectOwnersReadModel(db);
+    const projectFlagCreatorsReadModel = new ProjectFlagCreatorsReadModel(db);
     const groupStore = new GroupStore(db);
     const featureToggleStore = new FeatureToggleStore(
         db,
@@ -115,6 +121,8 @@ export const createProjectService = (
             featureTypeStore,
             accountStore,
             projectStatsStore,
+            projectOwnersReadModel,
+            projectFlagCreatorsReadModel,
         },
         config,
         accessService,
@@ -131,6 +139,8 @@ export const createFakeProjectService = (
 ): ProjectService => {
     const { getLogger } = config;
     const eventStore = new FakeEventStore();
+    const projectOwnersReadModel = new FakeProjectOwnersReadModel();
+    const projectFlagCreatorsReadModel = new FakeProjectFlagCreatorsReadModel();
     const projectStore = new FakeProjectStore();
     const groupStore = new FakeGroupStore();
     const featureToggleStore = new FakeFeatureToggleStore();
@@ -140,7 +150,7 @@ export const createFakeProjectService = (
     const featureTypeStore = new FakeFeatureTypeStore();
     const projectStatsStore = new FakeProjectStatsStore();
     const { accessService } = createFakeAccessService(config);
-    const featureToggleService = createFakeFeatureToggleService(config);
+    const { featureToggleService } = createFakeFeatureToggleService(config);
     const favoriteFeaturesStore = new FakeFavoriteFeaturesStore();
     const favoriteProjectsStore = new FakeFavoriteProjectsStore();
     const eventService = new EventService(
@@ -169,6 +179,8 @@ export const createFakeProjectService = (
     return new ProjectService(
         {
             projectStore,
+            projectOwnersReadModel,
+            projectFlagCreatorsReadModel,
             eventStore,
             featureToggleStore,
             environmentStore,

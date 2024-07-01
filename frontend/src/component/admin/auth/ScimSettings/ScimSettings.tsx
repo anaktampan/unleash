@@ -1,53 +1,40 @@
-import type React from 'react';
-import { useEffect, useState } from 'react';
-import { Button, FormControlLabel, Grid, Switch } from '@mui/material';
+import { Button, FormControlLabel, Grid, Switch, styled } from '@mui/material';
 import { Alert } from '@mui/material';
-import useToast from 'hooks/useToast';
 import useUiConfig from 'hooks/api/getters/useUiConfig/useUiConfig';
-import { useScimSettings } from 'hooks/api/getters/useScimSettings/useScimSettings';
-import { useScimSettingsApi } from 'hooks/api/actions/useScimSettingsApi/useScimSettingsApi';
-import { formatUnknownError } from 'utils/formatUnknownError';
-import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
 import { ScimTokenGenerationDialog } from './ScimTokenGenerationDialog';
 import { ScimTokenDialog } from './ScimTokenDialog';
+import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
+import { useEffect, useState } from 'react';
+import { formatUnknownError } from 'utils/formatUnknownError';
+import useToast from 'hooks/useToast';
+import { useScimSettingsApi } from 'hooks/api/actions/useScimSettingsApi/useScimSettingsApi';
+import { useScimSettings } from 'hooks/api/getters/useScimSettings/useScimSettings';
+
+const StyledContainer = styled('div')(({ theme }) => ({
+    padding: theme.spacing(3),
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: theme.shape.borderRadiusLarge,
+}));
+
+const StyledTitleDiv = styled('div')(({ theme }) => ({
+    marginBottom: theme.spacing(1),
+}));
 
 export const ScimSettings = () => {
-    const { setToastData, setToastApiError } = useToast();
     const { uiConfig } = useUiConfig();
-    const { settings, refetch } = useScimSettings();
-    const { saveSettings, generateNewToken, errors, loading } =
-        useScimSettingsApi();
-
-    const [enabled, setEnabled] = useState(false);
-
+    const { setToastData, setToastApiError } = useToast();
+    const [newToken, setNewToken] = useState('');
     const [tokenGenerationDialog, setTokenGenerationDialog] = useState(false);
     const [tokenDialog, setTokenDialog] = useState(false);
-    const [newToken, setNewToken] = useState('');
+    const { settings, refetch } = useScimSettings();
+    const [enabled, setEnabled] = useState(settings.enabled ?? true);
 
     useEffect(() => {
         setEnabled(settings.enabled ?? false);
     }, [settings]);
 
-    const onSubmit = async (event: React.SyntheticEvent) => {
-        event.preventDefault();
-
-        try {
-            await saveSettings({ enabled });
-            if (enabled && !settings.hasToken) {
-                const token = await generateNewToken();
-                setNewToken(token);
-                setTokenDialog(true);
-            }
-
-            setToastData({
-                title: 'Settings stored',
-                type: 'success',
-            });
-            refetch();
-        } catch (error: unknown) {
-            setToastApiError(formatUnknownError(error));
-        }
-    };
+    const { saveSettings, generateNewToken, errors, loading } =
+        useScimSettingsApi();
 
     const onGenerateNewToken = async () => {
         setTokenGenerationDialog(true);
@@ -58,6 +45,26 @@ export const ScimSettings = () => {
         const token = await generateNewToken();
         setNewToken(token);
         setTokenDialog(true);
+    };
+
+    const saveScimSettings = async (enabled: boolean) => {
+        try {
+            setEnabled(enabled);
+            await saveSettings({ enabled, assumeControlOfExisting: false });
+            if (enabled && !settings.hasToken) {
+                const token = await generateNewToken();
+                setNewToken(token);
+                setTokenDialog(true);
+            }
+
+            setToastData({
+                title: 'Settings stored',
+                type: 'success',
+            });
+            await refetch();
+        } catch (error: unknown) {
+            setToastApiError(formatUnknownError(error));
+        }
     };
 
     return (
@@ -79,19 +86,31 @@ export const ScimSettings = () => {
                     </Alert>
                 </Grid>
             </Grid>
-            <form onSubmit={onSubmit}>
+            <StyledContainer>
                 <Grid container spacing={3}>
-                    <Grid item md={5} mb={2}>
-                        <strong>Enable</strong>
-                        <p>Enable SCIM provisioning.</p>
+                    <Grid item md={10.5} mb={2}>
+                        <StyledTitleDiv>
+                            <strong>SCIM provisioning</strong>
+                        </StyledTitleDiv>
+                        <p>
+                            Enables SCIM provisioning. If SCIM provisioning has
+                            not previously been enabled here this will also set
+                            up a new auth token to use with your SCIM client,
+                            and display it to the user. After the dialog has
+                            been closed, this token will not be displayed again.
+                            If you need a new token you can click the Generate
+                            new token button below which will replace the old
+                            token with a new token, and similarly display the
+                            new token one time to the user.
+                        </p>
                     </Grid>
-                    <Grid item md={6}>
+                    <Grid item md={1.5}>
                         <FormControlLabel
                             control={
                                 <Switch
-                                    onChange={(_, enabled) =>
-                                        setEnabled(enabled)
-                                    }
+                                    onChange={(_, enabled) => {
+                                        saveScimSettings(enabled);
+                                    }}
                                     value={enabled}
                                     name='enabled'
                                     checked={enabled}
@@ -103,15 +122,7 @@ export const ScimSettings = () => {
                 </Grid>
 
                 <Grid container spacing={3}>
-                    <Grid item md={5}>
-                        <Button
-                            variant='contained'
-                            color='primary'
-                            type='submit'
-                            disabled={loading}
-                        >
-                            Save
-                        </Button>
+                    <Grid item md={5} mb={2}>
                         <ConditionallyRender
                             condition={Boolean(settings.hasToken)}
                             show={
@@ -120,7 +131,6 @@ export const ScimSettings = () => {
                                     color='error'
                                     disabled={loading}
                                     onClick={onGenerateNewToken}
-                                    sx={{ ml: 1 }}
                                 >
                                     Generate new token
                                 </Button>
@@ -128,17 +138,17 @@ export const ScimSettings = () => {
                         />
                     </Grid>
                 </Grid>
-            </form>
-            <ScimTokenGenerationDialog
-                open={tokenGenerationDialog}
-                setOpen={setTokenGenerationDialog}
-                onConfirm={onGenerateNewTokenConfirm}
-            />
-            <ScimTokenDialog
-                open={tokenDialog}
-                setOpen={setTokenDialog}
-                token={newToken}
-            />
+                <ScimTokenGenerationDialog
+                    open={tokenGenerationDialog}
+                    setOpen={setTokenGenerationDialog}
+                    onConfirm={onGenerateNewTokenConfirm}
+                />
+                <ScimTokenDialog
+                    open={tokenDialog}
+                    setOpen={setTokenDialog}
+                    token={newToken}
+                />
+            </StyledContainer>
         </>
     );
 };

@@ -146,6 +146,7 @@ export const createFakeInstanceStatsService = (config: IUnleashConfig) => {
     const eventStore = new FakeEventStore();
     const apiTokenStore = new FakeApiTokenStore();
     const clientMetricsStoreV2 = new FakeClientMetricsStoreV2();
+
     const instanceStatsServiceStores = {
         featureToggleStore,
         userStore,

@@ -5,18 +5,12 @@ import { NONE, UPDATE_FEATURE } from '../../../types/permissions';
 import type { IUnleashConfig } from '../../../types/option';
 import type { IUnleashServices } from '../../../types';
 import type FeatureToggleService from '../feature-toggle-service';
-import { featureSchema, querySchema } from '../../../schema/feature-schema';
+import { querySchema } from '../../../schema/feature-schema';
 import type { IFeatureToggleQuery } from '../../../types/model';
 import type FeatureTagService from '../../../services/feature-tag-service';
 import type { IAuthRequest } from '../../../routes/unleash-types';
-import { DEFAULT_ENV } from '../../../util/constants';
-import {
-    featuresSchema,
-    type FeaturesSchema,
-} from '../../../openapi/spec/features-schema';
 import type { TagSchema } from '../../../openapi/spec/tag-schema';
 import type { TagsSchema } from '../../../openapi/spec/tags-schema';
-import { serializeDates } from '../../../types/serialize-dates';
 import type { OpenApiService } from '../../../services/openapi-service';
 import { createRequestSchema } from '../../../openapi/util/create-request-schema';
 import {
@@ -56,27 +50,6 @@ class FeatureController extends Controller {
         this.service = featureToggleServiceV2;
 
         this.route({
-            method: 'get',
-            path: '',
-            handler: this.getAllToggles,
-            permission: NONE,
-            middleware: [
-                openApiService.validPath({
-                    tags: ['Features'],
-                    operationId: 'getAllToggles',
-                    responses: {
-                        200: createResponseSchema('featuresSchema'),
-                        ...getStandardResponses(401, 403),
-                    },
-                    summary: 'Get all feature toggles (deprecated)',
-                    description:
-                        'Gets all feature toggles with their full configuration. This endpoint is **deprecated**. You should  use the project-based endpoint instead (`/api/admin/projects/<project-id>/features`).',
-                    deprecated: true,
-                }),
-            ],
-        });
-
-        this.route({
             method: 'post',
             path: '/validate',
             handler: this.validate,
@@ -85,10 +58,10 @@ class FeatureController extends Controller {
                 openApiService.validPath({
                     tags: ['Features'],
                     operationId: 'validateFeature',
-                    summary: 'Validate a feature toggle name.',
+                    summary: 'Validate a feature flag name.',
                     requestBody: createRequestSchema('validateFeatureSchema'),
                     description:
-                        'Validates a feature toggle name: checks whether the name is URL-friendly and whether a feature with the given name already exists. Returns 200 if the feature name is compliant and unused.',
+                        'Validates a feature flag name: checks whether the name is URL-friendly and whether a feature with the given name already exists. Returns 200 if the feature name is compliant and unused.',
                     responses: {
                         200: emptyResponse,
                         ...getStandardResponses(400, 401, 409, 415),
@@ -210,32 +183,6 @@ class FeatureController extends Controller {
         return query;
     }
 
-    async getAllToggles(
-        req: IAuthRequest,
-        res: Response<FeaturesSchema>,
-    ): Promise<void> {
-        const query = await this.prepQuery(req.query);
-
-        const { user } = req;
-        const features = await this.service.getFeatureToggles(query, user.id);
-
-        this.openApiService.respondWithValidation(
-            200,
-            res,
-            featuresSchema.$id,
-            { version, features: serializeDates(features) },
-        );
-    }
-
-    async getToggle(
-        req: Request<{ featureName: string }, any, any, any>,
-        res: Response,
-    ): Promise<void> {
-        const name = req.params.featureName;
-        const feature = await this.service.getFeatureToggleLegacy(name);
-        res.json(feature).end();
-    }
-
     async listTags(
         req: Request<{ featureName: string }, any, any, any>,
         res: Response<TagsSchema>,
@@ -315,183 +262,6 @@ class FeatureController extends Controller {
             name,
             projectId ?? undefined,
         );
-        res.status(200).end();
-    }
-
-    async createToggle(req: IAuthRequest, res: Response): Promise<void> {
-        const toggle = req.body;
-
-        const validatedToggle = await featureSchema.validateAsync(toggle);
-        const { enabled, project, name, variants = [] } = validatedToggle;
-        const createdFeature = await this.service.createFeatureToggle(
-            project,
-            validatedToggle,
-            req.audit,
-            true,
-        );
-        const strategies = await Promise.all(
-            (toggle.strategies ?? []).map(async (s) =>
-                this.service.createStrategy(
-                    s,
-                    {
-                        projectId: project,
-                        featureName: name,
-                        environment: DEFAULT_ENV,
-                    },
-                    req.audit,
-                    req.user,
-                ),
-            ),
-        );
-        await this.service.updateEnabled(
-            project,
-            name,
-            DEFAULT_ENV,
-            enabled,
-            req.audit,
-        );
-        await this.service.saveVariants(name, project, variants, req.audit);
-
-        res.status(201).json({
-            ...createdFeature,
-            variants,
-            enabled,
-            strategies,
-        });
-    }
-
-    async updateToggle(req: IAuthRequest, res: Response): Promise<void> {
-        const { featureName } = req.params;
-        const updatedFeature = req.body;
-
-        updatedFeature.name = featureName;
-
-        const projectId = await this.service.getProjectId(featureName);
-        const value = await featureSchema.validateAsync(updatedFeature);
-
-        await this.service.updateFeatureToggle(
-            projectId,
-            value,
-            featureName,
-            req.audit,
-        );
-
-        await this.service.removeAllStrategiesForEnv(featureName);
-
-        if (updatedFeature.strategies) {
-            await Promise.all(
-                updatedFeature.strategies.map(async (s) =>
-                    this.service.createStrategy(
-                        s,
-                        {
-                            projectId: projectId!!,
-                            featureName,
-                            environment: DEFAULT_ENV,
-                        },
-                        req.audit,
-                        req.user,
-                    ),
-                ),
-            );
-        }
-        await this.service.updateEnabled(
-            projectId!!,
-            featureName,
-            DEFAULT_ENV,
-            updatedFeature.enabled,
-            req.audit,
-            req.user,
-        );
-        await this.service.saveVariants(
-            featureName,
-            projectId!!,
-            value.variants || [],
-            req.audit,
-        );
-
-        const feature = await this.service.storeFeatureUpdatedEventLegacy(
-            featureName,
-            req.audit,
-        );
-
-        res.status(200).json(feature);
-    }
-
-    /**
-     * @deprecated TODO: remove?
-     *
-     * Kept to keep backward compatibility
-     */
-    async toggle(req: IAuthRequest, res: Response): Promise<void> {
-        const { featureName } = req.params;
-        const projectId = await this.service.getProjectId(featureName);
-        const feature = await this.service.toggle(
-            projectId,
-            featureName,
-            DEFAULT_ENV,
-            req.audit,
-        );
-        await this.service.storeFeatureUpdatedEventLegacy(
-            featureName,
-            req.audit,
-        );
-        res.status(200).json(feature);
-    }
-
-    async toggleOn(req: IAuthRequest, res: Response): Promise<void> {
-        const { featureName } = req.params;
-        const projectId = await this.service.getProjectId(featureName);
-        const feature = await this.service.updateEnabled(
-            projectId,
-            featureName,
-            DEFAULT_ENV,
-            true,
-            req.audit,
-            req.user,
-        );
-        await this.service.storeFeatureUpdatedEventLegacy(
-            featureName,
-            req.audit,
-        );
-        res.json(feature);
-    }
-
-    async toggleOff(req: IAuthRequest, res: Response): Promise<void> {
-        const { featureName } = req.params;
-        const projectId = await this.service.getProjectId(featureName);
-        const feature = await this.service.updateEnabled(
-            projectId,
-            featureName,
-            DEFAULT_ENV,
-            false,
-            req.audit,
-            req.user,
-        );
-        await this.service.storeFeatureUpdatedEventLegacy(
-            featureName,
-            req.audit,
-        );
-        res.json(feature);
-    }
-
-    async staleOn(req: IAuthRequest, res: Response): Promise<void> {
-        const { featureName } = req.params;
-        await this.service.updateStale(featureName, true, req.audit);
-        const feature = await this.service.getFeatureToggleLegacy(featureName);
-        res.json(feature);
-    }
-
-    async staleOff(req: IAuthRequest, res: Response): Promise<void> {
-        const { featureName } = req.params;
-        await this.service.updateStale(featureName, false, req.audit);
-        const feature = await this.service.getFeatureToggleLegacy(featureName);
-        res.json(feature);
-    }
-
-    async archiveToggle(req: IAuthRequest, res: Response): Promise<void> {
-        const { featureName } = req.params;
-
-        await this.service.archiveToggle(featureName, req.user, req.audit);
         res.status(200).end();
     }
 }

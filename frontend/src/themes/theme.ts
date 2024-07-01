@@ -20,6 +20,7 @@ export const theme = {
         popup: '0px 2px 6px rgba(0, 0, 0, 0.25)',
         primaryHeader: '0px 8px 24px rgba(97, 91, 194, 0.2)',
         separator: '0px 2px 4px rgba(32, 32, 33, 0.12)', // Notifications header
+        accordionFooter: 'inset 0px 2px 4px rgba(32, 32, 33, 0.05)',
     },
     typography: {
         fontFamily: 'Sen, Roboto, sans-serif',
@@ -226,7 +227,7 @@ export const theme = {
         },
 
         /**
-         * For 'Seen' column on feature toggles list and other
+         * For 'Seen' column on feature flags list and other
          */
         seen: {
             unknown: colors.grey[100],

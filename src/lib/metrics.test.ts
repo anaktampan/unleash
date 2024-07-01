@@ -16,10 +16,19 @@ import { InstanceStatsService } from './features/instance-stats/instance-stats-s
 import VersionService from './services/version-service';
 import { createFakeGetActiveUsers } from './features/instance-stats/getActiveUsers';
 import { createFakeGetProductionChanges } from './features/instance-stats/getProductionChanges';
-import type { IEnvironmentStore, IUnleashStores } from './types';
+import type {
+    IEnvironmentStore,
+    IFeatureLifecycleReadModel,
+    IFeatureLifecycleStore,
+    IUnleashStores,
+} from './types';
 import FakeEnvironmentStore from './features/project-environments/fake-environment-store';
 import { SchedulerService } from './services';
 import noLogger from '../test/fixtures/no-logger';
+import getLogger from '../test/fixtures/no-logger';
+import dbInit, { type ITestDb } from '../test/e2e/helpers/database-init';
+import { FeatureLifecycleStore } from './features/feature-lifecycle/feature-lifecycle-store';
+import { FeatureLifecycleReadModel } from './features/feature-lifecycle/feature-lifecycle-read-model';
 
 const monitor = createMetricsMonitor();
 const eventBus = new EventEmitter();
@@ -29,10 +38,19 @@ let environmentStore: IEnvironmentStore;
 let statsService: InstanceStatsService;
 let stores: IUnleashStores;
 let schedulerService: SchedulerService;
+let featureLifeCycleStore: IFeatureLifecycleStore;
+let featureLifeCycleReadModel: IFeatureLifecycleReadModel;
+let db: ITestDb;
+
 beforeAll(async () => {
     const config = createTestConfig({
         server: {
             serverMetrics: true,
+        },
+        experimental: {
+            flags: {
+                featureLifecycleMetrics: true,
+            },
         },
     });
     stores = createStores();
@@ -45,6 +63,16 @@ beforeAll(async () => {
         createFakeGetActiveUsers(),
         createFakeGetProductionChanges(),
     );
+    db = await dbInit('metrics_test', getLogger);
+
+    featureLifeCycleReadModel = new FeatureLifecycleReadModel(
+        db.rawDatabase,
+        config.flagResolver,
+    );
+    stores.featureLifecycleReadModel = featureLifeCycleReadModel;
+    featureLifeCycleStore = new FeatureLifecycleStore(db.rawDatabase);
+    stores.featureLifecycleStore = featureLifeCycleStore;
+
     statsService = new InstanceStatsService(
         stores,
         config,
@@ -61,7 +89,7 @@ beforeAll(async () => {
         eventBus,
     );
 
-    const db = {
+    const metricsDbConf = {
         client: {
             pool: {
                 min: 0,
@@ -82,7 +110,7 @@ beforeAll(async () => {
         statsService,
         schedulerService,
         // @ts-ignore - We don't want a full knex implementation for our tests, it's enough that it actually yields the numbers we want.
-        db,
+        metricsDbConf,
     );
 });
 
@@ -143,16 +171,13 @@ test('should set environmentType when toggle is flipped', async () => {
 });
 
 test('should collect metrics for client metric reports', async () => {
-    eventBus.emit(CLIENT_METRICS, {
-        bucket: {
-            toggles: {
-                TestToggle: {
-                    yes: 10,
-                    no: 5,
-                },
-            },
+    eventBus.emit(CLIENT_METRICS, [
+        {
+            featureName: 'TestToggle',
+            yes: 10,
+            no: 5,
         },
-    });
+    ]);
 
     const metrics = await prometheusRegister.metrics();
     expect(metrics).toMatch(
@@ -186,12 +211,12 @@ test('should collect metrics for function timings', async () => {
     );
 });
 
-test('should collect metrics for feature toggle size', async () => {
+test('should collect metrics for feature flag size', async () => {
     const metrics = await prometheusRegister.metrics();
     expect(metrics).toMatch(/feature_toggles_total\{version="(.*)"\} 0/);
 });
 
-test('should collect metrics for archived feature toggle size', async () => {
+test('should collect metrics for archived feature flag size', async () => {
     const metrics = await prometheusRegister.metrics();
     expect(metrics).toMatch(/feature_toggles_archived_total 0/);
 });
@@ -274,4 +299,27 @@ test('should collect metrics for project disabled numbers', async () => {
     expect(recordedMetric).toMatch(
         /project_environments_disabled{project_id=\"default\"} 1/,
     );
+});
+
+test('should collect metrics for lifecycle', async () => {
+    await db.stores.featureToggleStore.create('default', {
+        name: 'my_feature_b',
+        createdByUserId: 9999,
+    });
+    await featureLifeCycleStore.insert([
+        {
+            feature: 'my_feature_b',
+            stage: 'initial',
+        },
+    ]);
+    const stageCount = await featureLifeCycleReadModel.getStageCountByProject();
+    const stageDurations =
+        await featureLifeCycleReadModel.getAllWithStageDuration();
+    expect(stageCount).toHaveLength(1);
+    expect(stageDurations).toHaveLength(1);
+
+    const metrics = await prometheusRegister.metrics();
+    expect(metrics).toMatch(/feature_lifecycle_stage_duration/);
+    expect(metrics).toMatch(/feature_lifecycle_stage_count_by_project/);
+    expect(metrics).toMatch(/feature_lifecycle_stage_entered/);
 });

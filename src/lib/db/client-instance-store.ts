@@ -218,6 +218,29 @@ export default class ClientInstanceStore implements IClientInstanceStore {
 
         return rows;
     }
+    async groupApplicationsBySdkAndProject(
+        projectId: string,
+    ): Promise<{ sdkVersion: string; applications: string[] }[]> {
+        const rows = await this.db
+            .with(
+                'instances',
+                this.db
+                    .select('app_name', 'sdk_version')
+                    .distinct()
+                    .from('client_instances'),
+            )
+            .select([
+                'i.sdk_version as sdkVersion',
+                this.db.raw('ARRAY_AGG(DISTINCT cme.app_name) as applications'),
+            ])
+            .from('client_metrics_env as cme')
+            .leftJoin('features as f', 'f.name', 'cme.feature_name')
+            .leftJoin('instances as i', 'i.app_name', 'cme.app_name')
+            .where('f.project', projectId)
+            .groupBy('i.sdk_version');
+
+        return rows;
+    }
 
     async getDistinctApplications(): Promise<string[]> {
         const rows = await this.db

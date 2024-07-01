@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { FC } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Box, Card, Typography, Link } from '@mui/material';
@@ -8,6 +9,7 @@ interface IFeatureToggleChanges {
     projectId: string;
     conflict?: string;
     onNavigate?: () => void;
+    children?: React.ReactNode;
 }
 
 export const FeatureToggleChanges: FC<IFeatureToggleChanges> = ({
@@ -49,7 +51,7 @@ export const FeatureToggleChanges: FC<IFeatureToggleChanges> = ({
                     px: 3,
                 }}
             >
-                <Typography>Feature toggle name: </Typography>
+                <Typography>Feature flag name: </Typography>
 
                 <Link
                     component={RouterLink}

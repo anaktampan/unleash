@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { render } from 'utils/testRenderer';
 import { testServerRoute, testServerSetup } from 'utils/testServer';
 import { FeatureToggleListTable } from './FeatureToggleListTable';
@@ -87,7 +87,7 @@ const filterFeaturesByProject = async (projectName: string) => {
     addFilterButton.click();
 
     const projectItem = await screen.findByText('Project');
-    projectItem.click();
+    fireEvent.click(projectItem);
 
     await screen.findByPlaceholderText('Search');
     const anotherProjectCheckbox = await screen.findByText(projectName);
@@ -137,7 +137,7 @@ test('Filter table by project', async () => {
     await filterFeaturesByProject('Project B');
 
     await screen.findByText(
-        'No feature toggles found matching your criteria. Get started by adding a new feature toggle.',
+        'No feature flags found matching your criteria. Get started by adding a new feature flag.',
     );
     expect(window.location.href).toContain(
         '?offset=0&columns=&project=IS%3Aproject-b',

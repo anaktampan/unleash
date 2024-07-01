@@ -59,6 +59,7 @@ import {
     CHANGE_REQUEST_SCHEDULED_APPLICATION_SUCCESS,
     CHANGE_REQUEST_SCHEDULED_APPLICATION_FAILURE,
     CHANGE_REQUEST_SCHEDULE_SUSPENDED,
+    FEATURE_COMPLETED,
 } from '../types';
 
 interface IEventData {
@@ -200,6 +201,10 @@ const EVENT_MAP: Record<string, IEventData> = {
         action: '*{{user}}* updated *{{feature}}* metadata in project *{{project}}*',
         path: '/projects/{{event.project}}/features/{{event.featureName}}',
     },
+    [FEATURE_COMPLETED]: {
+        action: '*{{feature}}* was marked as completed in project *{{project}}*',
+        path: '/projects/{{event.project}}/features/{{event.featureName}}',
+    },
     [FEATURE_POTENTIALLY_STALE_ON]: {
         action: '*{{feature}}* was marked as potentially stale in project *{{project}}*',
         path: '/projects/{{event.project}}/features/{{event.featureName}}',
@@ -329,7 +334,7 @@ export class FeatureEventFormatterMd implements FeatureEventFormatter {
             const text = `#${changeRequestId}`;
             const featureLink = this.generateFeatureLink(event);
             const featureText = featureLink
-                ? ` for feature toggle *${featureLink}*`
+                ? ` for feature flag *${featureLink}*`
                 : '';
             const environmentText = environment
                 ? ` in the *${environment}* environment`
@@ -441,11 +446,11 @@ export class FeatureEventFormatterMd implements FeatureEventFormatter {
                 ? ''
                 : !preData
                   ? ` ${propertyName} to ${userIdText(
-                          data?.parameters[propertyName],
-                      )}`
+                        data?.parameters[propertyName],
+                    )}`
                   : ` ${propertyName} from ${userIdText(
-                          preData.parameters[propertyName],
-                      )} to ${userIdText(data?.parameters[propertyName])}`;
+                        preData.parameters[propertyName],
+                    )} to ${userIdText(data?.parameters[propertyName])}`;
         const constraintText = this.constraintChangeText(
             preData?.constraints,
             data?.constraints,

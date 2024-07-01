@@ -14,16 +14,15 @@ import {
     FeatureStrategyUpdateEvent,
     type FeatureToggle,
     type FeatureToggleDTO,
-    type FeatureToggleLegacy,
-    type FeatureToggleWithDependencies,
+    type FeatureToggleView,
     type FeatureToggleWithEnvironment,
-    FeatureUpdatedEvent,
     FeatureVariantEvent,
     type IAuditUser,
     type IConstraint,
     type IDependency,
     type IFeatureEnvironmentInfo,
     type IFeatureEnvironmentStore,
+    type IFeatureLifecycleStage,
     type IFeatureNaming,
     type IFeatureOverview,
     type IFeatureStrategy,
@@ -108,6 +107,9 @@ import ArchivedFeatureError from '../../error/archivedfeature-error';
 import { FEATURES_CREATED_BY_PROCESSED } from '../../metric-events';
 import { allSettledWithRejection } from '../../util/allSettledWithRejection';
 import type EventEmitter from 'node:events';
+import type { IFeatureLifecycleReadModel } from '../feature-lifecycle/feature-lifecycle-read-model-type';
+import type { ResourceLimitsSchema } from '../../openapi';
+import { ExceedsLimitError } from '../../error/exceeds-limit-error';
 
 interface IFeatureContext {
     featureName: string;
@@ -173,9 +175,13 @@ class FeatureToggleService {
 
     private dependentFeaturesReadModel: IDependentFeaturesReadModel;
 
+    private featureLifecycleReadModel: IFeatureLifecycleReadModel;
+
     private dependentFeaturesService: DependentFeaturesService;
 
     private eventBus: EventEmitter;
+
+    private resourceLimits: ResourceLimitsSchema;
 
     constructor(
         {
@@ -202,7 +208,11 @@ class FeatureToggleService {
             getLogger,
             flagResolver,
             eventBus,
-        }: Pick<IUnleashConfig, 'getLogger' | 'flagResolver' | 'eventBus'>,
+            resourceLimits,
+        }: Pick<
+            IUnleashConfig,
+            'getLogger' | 'flagResolver' | 'eventBus' | 'resourceLimits'
+        >,
         segmentService: ISegmentService,
         accessService: AccessService,
         eventService: EventService,
@@ -210,6 +220,7 @@ class FeatureToggleService {
         privateProjectChecker: IPrivateProjectChecker,
         dependentFeaturesReadModel: IDependentFeaturesReadModel,
         dependentFeaturesService: DependentFeaturesService,
+        featureLifecycleReadModel: IFeatureLifecycleReadModel,
     ) {
         this.logger = getLogger('services/feature-toggle-service.ts');
         this.featureStrategiesStore = featureStrategiesStore;
@@ -228,7 +239,9 @@ class FeatureToggleService {
         this.privateProjectChecker = privateProjectChecker;
         this.dependentFeaturesReadModel = dependentFeaturesReadModel;
         this.dependentFeaturesService = dependentFeaturesService;
+        this.featureLifecycleReadModel = featureLifecycleReadModel;
         this.eventBus = eventBus;
+        this.resourceLimits = resourceLimits;
     }
 
     async validateFeaturesContext(
@@ -350,6 +363,43 @@ class FeatureToggleService {
                         );
                     }
                 }),
+            );
+        }
+    }
+
+    async validateStrategyLimit(featureEnv: {
+        projectId: string;
+        environment: string;
+        featureName: string;
+    }) {
+        if (!this.flagResolver.isEnabled('resourceLimits')) return;
+
+        const limit = this.resourceLimits.featureEnvironmentStrategies;
+        const existingCount = (
+            await this.featureStrategiesStore.getStrategiesForFeatureEnv(
+                featureEnv.projectId,
+                featureEnv.featureName,
+                featureEnv.environment,
+            )
+        ).length;
+        if (existingCount >= limit) {
+            throw new ExceedsLimitError('strategy', limit);
+        }
+    }
+
+    validateConstraintValuesLimit(updatedConstrains: IConstraint[]) {
+        if (!this.flagResolver.isEnabled('resourceLimits')) return;
+
+        const limit = this.resourceLimits.constraintValues;
+        const constraintOverLimit = updatedConstrains.find(
+            (constraint) =>
+                Array.isArray(constraint.values) &&
+                constraint.values?.length > limit,
+        );
+        if (constraintOverLimit) {
+            throw new ExceedsLimitError(
+                `content values for ${constraintOverLimit.contextName}`,
+                limit,
             );
         }
     }
@@ -599,6 +649,7 @@ class FeatureToggleService {
             strategyConfig.constraints &&
             strategyConfig.constraints.length > 0
         ) {
+            this.validateConstraintValuesLimit(strategyConfig.constraints);
             strategyConfig.constraints = await this.validateConstraints(
                 strategyConfig.constraints,
             );
@@ -619,6 +670,12 @@ class FeatureToggleService {
             );
             strategyConfig.variants = fixedVariants;
         }
+
+        await this.validateStrategyLimit({
+            featureName,
+            projectId,
+            environment,
+        });
 
         try {
             const newFeatureStrategy =
@@ -751,6 +808,7 @@ class FeatureToggleService {
 
         if (existingStrategy.id === id) {
             if (updates.constraints && updates.constraints.length > 0) {
+                this.validateConstraintValuesLimit(updates.constraints);
                 updates.constraints = await this.validateConstraints(
                     updates.constraints,
                 );
@@ -980,7 +1038,7 @@ class FeatureToggleService {
         projectId,
         environmentVariants,
         userId,
-    }: IGetFeatureParams): Promise<FeatureToggleWithDependencies> {
+    }: IGetFeatureParams): Promise<FeatureToggleView> {
         if (projectId) {
             await this.validateFeatureBelongsToProject({
                 featureName,
@@ -990,9 +1048,11 @@ class FeatureToggleService {
 
         let dependencies: IDependency[] = [];
         let children: string[] = [];
-        [dependencies, children] = await Promise.all([
+        let lifecycle: IFeatureLifecycleStage | undefined = undefined;
+        [dependencies, children, lifecycle] = await Promise.all([
             this.dependentFeaturesReadModel.getParents(featureName),
             this.dependentFeaturesReadModel.getChildren([featureName]),
+            this.featureLifecycleReadModel.findCurrentStage(featureName),
         ]);
 
         if (environmentVariants) {
@@ -1006,6 +1066,7 @@ class FeatureToggleService {
                 ...result,
                 dependencies,
                 children,
+                lifecycle,
             };
         } else {
             const result =
@@ -1018,6 +1079,7 @@ class FeatureToggleService {
                 ...result,
                 dependencies,
                 children,
+                lifecycle,
             };
         }
     }
@@ -1089,41 +1151,6 @@ class FeatureToggleService {
         return features as FeatureConfigurationClient[];
     }
 
-    /**
-     * @deprecated Legacy!
-     *
-     * Used to retrieve metadata of all feature toggles defined in Unleash.
-     * @param query - Allow you to limit search based on criteria such as project, tags, namePrefix. See @IFeatureToggleQuery
-     * @param userId - Used to find / mark features as favorite based on users preferences
-     * @param archived - Return archived or active toggles
-     * @returns
-     */
-    async getFeatureToggles(
-        query?: IFeatureToggleQuery,
-        userId?: number,
-        archived: boolean = false,
-    ): Promise<FeatureToggle[]> {
-        // Remove with with feature flag
-        const features = await this.featureToggleStore.getFeatureToggleList(
-            query,
-            userId,
-            archived,
-        );
-
-        if (userId) {
-            const projectAccess =
-                await this.privateProjectChecker.getUserAccessibleProjects(
-                    userId,
-                );
-            return projectAccess.mode === 'all'
-                ? features
-                : features.filter((f) =>
-                      projectAccess.projects.includes(f.project),
-                  );
-        }
-        return features;
-    }
-
     async getFeatureOverview(
         params: IFeatureProjectUserParams,
     ): Promise<IFeatureOverview[]> {
@@ -1151,7 +1178,7 @@ class FeatureToggleService {
         isValidated: boolean = false,
     ): Promise<FeatureToggle> {
         this.logger.info(
-            `${auditUser.username} creates feature toggle ${value.name}`,
+            `${auditUser.username} creates feature flag ${value.name}`,
         );
         await this.validateName(value.name);
         await this.validateFeatureFlagNameAgainstPattern(value.name, projectId);
@@ -1160,7 +1187,7 @@ class FeatureToggleService {
 
         if (await this.projectStore.isFeatureLimitReached(projectId)) {
             throw new InvalidOperationError(
-                'You have reached the maximum number of feature toggles for this project.',
+                'You have reached the maximum number of feature flags for this project.',
             );
         }
         if (exists) {
@@ -1296,7 +1323,7 @@ class FeatureToggleService {
             );
         }
         this.logger.info(
-            `${auditUser.username} clones feature toggle ${featureName} to ${newFeatureName}`,
+            `${auditUser.username} clones feature flag ${featureName} to ${newFeatureName}`,
         );
         await this.validateName(newFeatureName);
 
@@ -1374,7 +1401,7 @@ class FeatureToggleService {
         });
 
         this.logger.info(
-            `${auditUser.username} updates feature toggle ${featureName}`,
+            `${auditUser.username} updates feature flag ${featureName}`,
         );
 
         const featureData =
@@ -1498,8 +1525,8 @@ class FeatureToggleService {
         try {
             const feature = await this.featureToggleStore.get(name);
             msg = feature.archived
-                ? 'An archived toggle with that name already exists'
-                : 'A toggle with that name already exists';
+                ? 'An archived flag with that name already exists'
+                : 'A flag with that name already exists';
         } catch (error) {
             return;
         }
@@ -1840,67 +1867,6 @@ class FeatureToggleService {
         return feature;
     }
 
-    // @deprecated
-    async storeFeatureUpdatedEventLegacy(
-        featureName: string,
-        auditUser: IAuditUser,
-    ): Promise<FeatureToggleLegacy> {
-        const feature = await this.getFeatureToggleLegacy(featureName);
-
-        // Legacy event. Will not be used from v4.3.
-        // We do not include 'preData' on purpose.
-        await this.eventService.storeEvent(
-            new FeatureUpdatedEvent({
-                featureName,
-                data: feature,
-                project: feature.project,
-                auditUser,
-            }),
-        );
-        return feature;
-    }
-
-    // @deprecated
-    async toggle(
-        projectId: string,
-        featureName: string,
-        environment: string,
-        auditUser: IAuditUser,
-    ): Promise<FeatureToggle> {
-        await this.featureToggleStore.get(featureName);
-        const isEnabled =
-            await this.featureEnvironmentStore.isEnvironmentEnabled(
-                featureName,
-                environment,
-            );
-        return this.updateEnabled(
-            projectId,
-            featureName,
-            environment,
-            !isEnabled,
-            auditUser,
-        );
-    }
-
-    // @deprecated
-    async getFeatureToggleLegacy(
-        featureName: string,
-    ): Promise<FeatureToggleLegacy> {
-        const feature =
-            await this.featureStrategiesStore.getFeatureToggleWithEnvs(
-                featureName,
-            );
-        const { environments, ...legacyFeature } = feature;
-        const defaultEnv = environments.find((e) => e.name === DEFAULT_ENV);
-        const strategies = defaultEnv?.strategies || [];
-        const enabled = defaultEnv?.enabled || false;
-        return {
-            ...legacyFeature,
-            enabled,
-            strategies,
-        };
-    }
-
     async changeProject(
         featureName: string,
         newProject: string,
@@ -1937,10 +1903,6 @@ class FeatureToggleService {
                 featureName,
             }),
         );
-    }
-
-    async getArchivedFeatures(): Promise<FeatureToggle[]> {
-        return this.getFeatureToggles({}, undefined, true);
     }
 
     // TODO: add project id.
@@ -1980,6 +1942,11 @@ class FeatureToggleService {
         const eligibleFeatureNames = eligibleFeatures.map(
             (toggle) => toggle.name,
         );
+
+        if (eligibleFeatures.length === 0) {
+            return;
+        }
+
         const tags = await this.tagStore.getAllByFeatures(eligibleFeatureNames);
         await this.featureToggleStore.batchDelete(eligibleFeatureNames);
 
@@ -2174,7 +2141,41 @@ class FeatureToggleService {
         return featureToggle;
     }
 
+    private async verifyLegacyVariants(featureName: string) {
+        const existingLegacyVariantsExist =
+            await this.featureEnvironmentStore.variantExists(featureName);
+        const enableLegacyVariants = this.flagResolver.isEnabled(
+            'enableLegacyVariants',
+        );
+        const useLegacyVariants =
+            existingLegacyVariantsExist || enableLegacyVariants;
+        if (!useLegacyVariants) {
+            throw new InvalidOperationError(
+                `Environment variants deprecated for feature: ${featureName}. Use strategy variants instead.`,
+            );
+        }
+    }
+
     async saveVariantsOnEnv(
+        projectId: string,
+        featureName: string,
+        environment: string,
+        newVariants: IVariant[],
+        auditUser: IAuditUser,
+        oldVariants?: IVariant[],
+    ): Promise<IVariant[]> {
+        await this.verifyLegacyVariants(featureName);
+        return this.legacySaveVariantsOnEnv(
+            projectId,
+            featureName,
+            environment,
+            newVariants,
+            auditUser,
+            oldVariants,
+        );
+    }
+
+    async legacySaveVariantsOnEnv(
         projectId: string,
         featureName: string,
         environment: string,
