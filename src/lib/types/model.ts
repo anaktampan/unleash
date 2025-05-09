@@ -14,6 +14,7 @@ import type { IntegrationEventsService } from '../features/integration-events/in
 import type { IFlagResolver } from './experimental';
 import type { Collaborator } from '../features/feature-toggle/types/feature-collaborators-read-model-type';
 import type { EventEmitter } from 'events';
+import type { IFeatureLink } from '../features/feature-links/feature-links-read-model-type';
 
 export type Operator = (typeof ALL_OPERATORS)[number];
 
@@ -123,6 +124,7 @@ export interface FeatureToggleView extends FeatureToggleWithEnvironment {
     children: string[];
     lifecycle: IFeatureLifecycleStage | undefined;
     collaborators?: { users: Collaborator[] };
+    links: IFeatureLink[];
 }
 
 export interface IEnvironmentDetail extends IEnvironmentBase {
@@ -320,6 +322,7 @@ export interface IProjectOverview {
     featureNaming?: IFeatureNaming;
     defaultStickiness: string;
     onboardingStatus: ProjectOverviewSchema['onboardingStatus'];
+    linkTemplates?: IProjectLinkTemplate[];
 }
 
 export interface IProjectHealthReport extends IProjectHealth {
@@ -330,6 +333,11 @@ export interface IProjectHealthReport extends IProjectHealth {
 
 export interface IProjectParam {
     projectId: string;
+}
+
+export interface IProjectLinkTemplate {
+    title?: string;
+    urlTemplate: string;
 }
 
 export interface IArchivedQuery {
@@ -460,6 +468,16 @@ export interface IRoleIdentifier {
     roleName?: RoleName;
 }
 
+export interface IFrontendClientApp {
+    appName: string;
+    instanceId: string;
+    sdkVersion: string;
+    sdkType: 'frontend';
+    environment: string;
+    projects?: string[];
+    createdBy?: string;
+}
+
 export interface IClientApp {
     appName: string;
     instanceId: string;
@@ -468,6 +486,7 @@ export interface IClientApp {
     seenToggles?: string[];
     metricsCount?: number;
     strategies?: string[] | Record<string, string>[];
+    projects?: string[];
     count?: number;
     started?: string | number | Date;
     interval?: number;
@@ -478,6 +497,7 @@ export interface IClientApp {
     platformVersion?: string;
     yggdrasilVersion?: string;
     specVersion?: string;
+    sdkType?: 'frontend' | 'backend' | null;
 }
 
 export interface IAppFeature {
@@ -547,6 +567,7 @@ export interface IProject {
     defaultStickiness: string;
     featureLimit?: number;
     featureNaming?: IFeatureNaming;
+    linkTemplates?: IProjectLinkTemplate[];
 }
 
 export interface IProjectApplications {

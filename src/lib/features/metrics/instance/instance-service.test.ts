@@ -41,10 +41,10 @@ test('Multiple registrations of same appname and instanceid within same time per
         started: new Date(),
         interval: 10,
     };
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
 
     await clientMetrics.bulkAdd(); // in prod called by a SchedulerService
 
@@ -98,12 +98,12 @@ test('Multiple unique clients causes multiple registrations', async () => {
         started: new Date(),
         interval: 10,
     };
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client2, '127.0.0.1');
-    await clientMetrics.registerClient(client2, '127.0.0.1');
-    await clientMetrics.registerClient(client2, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client2, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client2, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client2, '127.0.0.1');
 
     await clientMetrics.bulkAdd(); // in prod called by a SchedulerService
 
@@ -141,15 +141,15 @@ test('Same client registered outside of dedup interval will be registered twice'
         started: new Date(),
         interval: 10,
     };
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
 
     await clientMetrics.bulkAdd(); // in prod called by a SchedulerService
 
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
-    await clientMetrics.registerClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
+    await clientMetrics.registerBackendClient(client1, '127.0.0.1');
 
     await clientMetrics.bulkAdd(); // in prod called by a SchedulerService
 
@@ -202,6 +202,8 @@ test('filter out private projects from overview', async () => {
                         name: 'development',
                         instanceCount: 1,
                         sdks: ['unleash-client-node:3.5.1'],
+                        backendSdks: ['unleash-client-node:3.5.1'],
+                        frontendSdks: [],
                         lastSeen: new Date(),
                         issues: {
                             missingFeatures: [],

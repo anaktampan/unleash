@@ -102,11 +102,6 @@ export const FeatureToggleListTable: FC = () => {
         tableState,
         setTableState,
     );
-    const onAvatarClick = useTableStateFilter(
-        ['createdBy', 'IS'],
-        tableState,
-        setTableState,
-    );
 
     const { projects } = useProjects();
     const bodyLoadingRef = useLoading(loading);
@@ -160,7 +155,7 @@ export const FeatureToggleListTable: FC = () => {
                               onTagClick,
                               onFlagTypeClick,
                           ),
-                          meta: { width: '50%' },
+                          meta: { width: '40%' },
                       }),
                       columnHelper.accessor('createdAt', {
                           header: 'Created',
@@ -172,7 +167,7 @@ export const FeatureToggleListTable: FC = () => {
                       columnHelper.accessor('createdBy', {
                           id: 'createdBy',
                           header: 'By',
-                          cell: AvatarCell(onAvatarClick),
+                          cell: AvatarCell(),
                           meta: { width: '1%', align: 'center' },
                           enableSorting: false,
                       }),
@@ -186,7 +181,7 @@ export const FeatureToggleListTable: FC = () => {
                                   data-loading
                               />
                           ),
-                          enableSorting: false, // FIXME: enable sorting by lifecycle
+                          enableSorting: false,
                           size: 50,
                           meta: { width: '1%' },
                       }),
@@ -197,6 +192,7 @@ export const FeatureToggleListTable: FC = () => {
                               <StatusCell {...original} />
                           ),
                           enableSorting: false,
+                          size: 350,
                       }),
                       columnHelper.accessor('project', {
                           header: 'Project',
@@ -347,12 +343,11 @@ export const FeatureToggleListTable: FC = () => {
                   ],
         [tableState.favoritesFirst],
     );
-    const data = useMemo(
+    const data = useMemo<FeatureSearchResponseSchema[]>(
         () =>
             features?.length === 0 && loading ? featuresPlaceholder : features,
         [initialLoad, features, loading],
     );
-
     const table = useReactTable(
         withTableState(tableState, setTableState, {
             columns,
@@ -408,23 +403,19 @@ export const FeatureToggleListTable: FC = () => {
                     }
                     actions={
                         <>
-                            <ConditionallyRender
-                                condition={!isSmallScreen}
-                                show={
-                                    <>
-                                        <Search
-                                            placeholder='Search'
-                                            expandable
-                                            initialValue={
-                                                tableState.query || ''
-                                            }
-                                            onChange={setSearchValue}
-                                            id='globalFeatureFlags'
-                                        />
-                                        <PageHeader.Divider />
-                                    </>
-                                }
-                            />
+                            {!flagsReleaseManagementUIEnabled &&
+                            !isSmallScreen ? (
+                                <>
+                                    <Search
+                                        placeholder='Search'
+                                        expandable
+                                        initialValue={tableState.query || ''}
+                                        onChange={setSearchValue}
+                                        id='globalFeatureFlags'
+                                    />
+                                    <PageHeader.Divider />
+                                </>
+                            ) : null}
                             <Link
                                 component={RouterLink}
                                 to='/archive'
@@ -455,7 +446,9 @@ export const FeatureToggleListTable: FC = () => {
                     }
                 >
                     <ConditionallyRender
-                        condition={isSmallScreen}
+                        condition={
+                            isSmallScreen && !flagsReleaseManagementUIEnabled
+                        }
                         show={
                             <Search
                                 initialValue={tableState.query || ''}
@@ -472,17 +465,36 @@ export const FeatureToggleListTable: FC = () => {
                     state={filterState}
                     onChange={setTableState}
                     total={loading ? undefined : total}
-                />
+                >
+                    {!isSmallScreen ? (
+                        <Search
+                            placeholder='Search'
+                            initialValue={tableState.query || ''}
+                            onChange={setSearchValue}
+                            id='globalFeatureFlags'
+                        />
+                    ) : null}
+                </LifecycleFilters>
             ) : null}
             <FeatureToggleFilters
                 onChange={setTableState}
                 state={filterState}
             />
+            {isSmallScreen ? (
+                <Box sx={(theme) => ({ padding: theme.spacing(0, 3, 3) })}>
+                    <Search
+                        initialValue={tableState.query || ''}
+                        onChange={setSearchValue}
+                        id='globalFeatureFlags'
+                    />
+                </Box>
+            ) : null}
             <SearchHighlightProvider value={tableState.query || ''}>
                 <div ref={bodyLoadingRef}>
                     <PaginatedTable tableInstance={table} totalItems={total} />
                 </div>
             </SearchHighlightProvider>
+
             <ConditionallyRender
                 condition={rows.length === 0}
                 show={

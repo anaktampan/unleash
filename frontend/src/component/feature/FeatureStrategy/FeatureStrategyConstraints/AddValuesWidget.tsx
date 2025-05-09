@@ -1,16 +1,14 @@
 import Add from '@mui/icons-material/Add';
-import { Button, Popover, styled, TextField } from '@mui/material';
-import { ScreenReaderOnly } from 'component/common/ScreenReaderOnly/ScreenReaderOnly';
-import {
-    forwardRef,
-    useId,
-    useImperativeHandle,
-    useRef,
-    useState,
-} from 'react';
+import { styled } from '@mui/material';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { parseParameterStrings } from 'utils/parseParameter';
+import { baseChipStyles } from './ValueList';
+import { AddValuesPopover, type OnAddActions } from './AddValuesPopover';
+import type { ConstraintValidatorOutput } from 'component/common/NewConstraintAccordion/ConstraintAccordionEdit/ConstraintAccordionEditBody/useConstraintInput/constraintValidators';
 
+// todo: MUI v6 / v7 upgrade: consider changing this to a Chip to align with the rest of the values and the single value selector. There was a fix introduced in v6 that makes you not lose focus on pressing esc: https://mui.com/material-ui/migration/upgrade-to-v6/#chip talk to Thomas for more info.
 const AddValuesButton = styled('button')(({ theme }) => ({
+    ...baseChipStyles(theme),
     color: theme.palette.primary.main,
     svg: {
         fill: theme.palette.primary.main,
@@ -26,59 +24,28 @@ const AddValuesButton = styled('button')(({ theme }) => ({
     alignItems: 'center',
     padding: theme.spacing(0.5, 1.5, 0.5, 1.5),
     height: 'auto',
-    transition: 'all 0.3s ease',
-    outline: `1px solid #0000`,
-    background: theme.palette.background.elevation1,
-    ':hover, :focus-visible': {
-        background: theme.palette.background.elevation1,
-        outlineColor: theme.palette.secondary.dark,
-    },
-}));
-
-const StyledPopover = styled(Popover)(({ theme }) => ({
-    '& .MuiPaper-root': {
-        borderRadius: theme.shape.borderRadiusLarge,
-        border: `1px solid ${theme.palette.divider}`,
-        padding: theme.spacing(2),
-        width: '250px',
-    },
-}));
-
-const StyledTextField = styled(TextField)(({ theme }) => ({
-    flexGrow: 1,
-}));
-
-const InputRow = styled('div')(({ theme }) => ({
-    display: 'flex',
-    gap: theme.spacing(1),
-    alignItems: 'start',
-    width: '100%',
-}));
-
-const ErrorMessage = styled('div')(({ theme }) => ({
-    color: theme.palette.error.main,
-    fontSize: theme.typography.caption.fontSize,
-    marginBottom: theme.spacing(1),
+    cursor: 'pointer',
 }));
 
 interface AddValuesProps {
     onAddValues: (newValues: string[]) => void;
+    helpText?: string;
+    validator: (...values: string[]) => ConstraintValidatorOutput;
 }
 
 export const AddValuesWidget = forwardRef<HTMLButtonElement, AddValuesProps>(
-    ({ onAddValues }, ref) => {
+    ({ onAddValues, helpText, validator }, ref) => {
         const [open, setOpen] = useState(false);
-        const [inputValues, setInputValues] = useState('');
-        const [error, setError] = useState('');
         const positioningRef = useRef<HTMLButtonElement>(null);
         useImperativeHandle(
             ref,
             () => positioningRef.current as HTMLButtonElement,
         );
-        const inputRef = useRef<HTMLInputElement>(null);
-        const inputId = useId();
 
-        const handleAdd = () => {
+        const handleAdd = (
+            inputValues: string,
+            { setError, clearInput }: OnAddActions,
+        ) => {
             const newValues = parseParameterStrings(inputValues);
 
             if (newValues.length === 0) {
@@ -91,10 +58,14 @@ export const AddValuesWidget = forwardRef<HTMLButtonElement, AddValuesProps>(
                 return;
             }
 
-            onAddValues(newValues);
-            setInputValues('');
-            setError('');
-            inputRef?.current?.focus();
+            const [isValid, errorMessage] = validator(...newValues);
+            if (isValid) {
+                onAddValues(newValues);
+                clearInput();
+                setError('');
+            } else {
+                setError(errorMessage);
+            }
         };
 
         return (
@@ -107,59 +78,14 @@ export const AddValuesWidget = forwardRef<HTMLButtonElement, AddValuesProps>(
                     <Add />
                     <span>Add values</span>
                 </AddValuesButton>
-                <StyledPopover
+
+                <AddValuesPopover
+                    onAdd={handleAdd}
+                    helpText={helpText}
                     open={open}
-                    disableScrollLock
                     anchorEl={positioningRef.current}
                     onClose={() => setOpen(false)}
-                    anchorOrigin={{
-                        vertical: 'bottom',
-                        horizontal: 'left',
-                    }}
-                    transformOrigin={{
-                        vertical: 'top',
-                        horizontal: 'left',
-                    }}
-                >
-                    <form
-                        onSubmit={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleAdd();
-                        }}
-                    >
-                        {error && <ErrorMessage>{error}</ErrorMessage>}
-                        <InputRow>
-                            <ScreenReaderOnly>
-                                <label htmlFor={inputId}>
-                                    Constraint Value
-                                </label>
-                            </ScreenReaderOnly>
-                            <StyledTextField
-                                id={inputId}
-                                placeholder='Enter value'
-                                value={inputValues}
-                                onChange={(e) => {
-                                    setInputValues(e.target.value);
-                                    setError('');
-                                }}
-                                size='small'
-                                variant='standard'
-                                fullWidth
-                                inputRef={inputRef}
-                                autoFocus
-                            />
-                            <Button
-                                variant='text'
-                                type='submit'
-                                color='primary'
-                                disabled={!inputValues.trim()}
-                            >
-                                Add
-                            </Button>
-                        </InputRow>
-                    </form>
-                </StyledPopover>
+                />
             </>
         );
     },

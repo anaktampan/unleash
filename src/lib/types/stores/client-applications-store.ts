@@ -19,6 +19,8 @@ export interface IClientApplication {
     icon: string;
     strategies: string[];
     usage?: IClientApplicationUsage[];
+    projects?: string[];
+    environment?: string;
 }
 
 export interface IClientApplications {
@@ -44,4 +46,5 @@ export interface IClientApplicationsStore
     getUnannounced(): Promise<IClientApplication[]>;
     setUnannouncedToAnnounced(): Promise<IClientApplication[]>;
     getApplicationOverview(appName: string): Promise<IApplicationOverview>;
+    removeInactiveApplications(): Promise<number>;
 }

@@ -51,7 +51,6 @@ export type IFlagKey =
     | 'productivityReportEmail'
     | 'productivityReportUnsubscribers'
     | 'enterprise-payg'
-    | 'flagOverviewRedesign'
     | 'showUserDeviceCount'
     | 'memorizeStats'
     | 'streaming'
@@ -61,15 +60,17 @@ export type IFlagKey =
     | 'consumptionModel'
     | 'teamsIntegrationChangeRequests'
     | 'edgeObservability'
-    | 'simplifyDisableFeature'
-    | 'adminNavUI'
     | 'tagTypeColor'
-    | 'globalChangeRequestConfig'
     | 'addEditStrategy'
     | 'newStrategyDropdown'
     | 'flagsOverviewSearch'
     | 'flagsReleaseManagementUI'
-    | 'cleanupReminder';
+    | 'cleanupReminder'
+    | 'removeInactiveApplications'
+    | 'registerFrontendClient'
+    | 'featureLinks'
+    | 'projectLinkTemplates'
+    | 'reportUnknownFlags';
 
 export type IFlags = Partial<{ [key in IFlagKey]: boolean | Variant }>;
 
@@ -261,10 +262,6 @@ const flags: IFlags = {
         process.env.UNLEASH_EXPERIMENTAL_SHOW_USER_DEVICE_COUNT,
         false,
     ),
-    flagOverviewRedesign: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_FLAG_OVERVIEW_REDESIGN,
-        false,
-    ),
     streaming: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_STREAMING,
         false,
@@ -294,20 +291,8 @@ const flags: IFlags = {
         process.env.EXPERIMENTAL_EDGE_OBSERVABILITY,
         false,
     ),
-    simplifyDisableFeature: parseEnvVarBoolean(
-        process.env.EXPERIMENTAL_SIMPLIFY_DISABLE_FEATURE,
-        false,
-    ),
-    adminNavUI: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_ADMIN_NAV_UI,
-        false,
-    ),
     tagTypeColor: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_TAG_TYPE_COLOR,
-        false,
-    ),
-    globalChangeRequestConfig: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_GLOBAL_CHANGE_REQUEST_CONFIG,
         false,
     ),
     addEditStrategy: parseEnvVarBoolean(
@@ -328,6 +313,26 @@ const flags: IFlags = {
     ),
     cleanupReminder: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_CLEANUP_REMINDER,
+        false,
+    ),
+    removeInactiveApplications: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_REMOVE_INACTIVE_APPLICATIONS,
+        false,
+    ),
+    registerFrontendClient: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_REGISTER_FRONTEND_CLIENT,
+        false,
+    ),
+    featureLinks: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_FEATURE_LINKS,
+        false,
+    ),
+    projectLinkTemplates: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_PROJECT_LINK_TEMPLATES,
+        false,
+    ),
+    reportUnknownFlags: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_REPORT_UNKNOWN_FLAGS,
         false,
     ),
 };

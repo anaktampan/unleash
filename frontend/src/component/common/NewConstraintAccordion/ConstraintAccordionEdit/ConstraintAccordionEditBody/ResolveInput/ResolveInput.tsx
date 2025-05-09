@@ -62,6 +62,13 @@ const resolveLegalValues = (
     };
 };
 
+/**
+ * @deprecated; remove with `addEditStrategy` flag. Need an input? Prefer using specific input components.
+ *
+ * For the case of `ProjectActionsFilterItem.tsx`: it already excludes legal
+ * values and date operators. This leaves only free text and single value
+ * text/numeric operators. Alternatively, consider rewriting this component to only handle those cases.
+ */
 export const ResolveInput = ({
     input,
     contextDefinition,
@@ -80,20 +87,18 @@ export const ResolveInput = ({
             case IN_OPERATORS_LEGAL_VALUES:
             case STRING_OPERATORS_LEGAL_VALUES:
                 return (
-                    <>
-                        <RestrictiveLegalValues
-                            data={resolveLegalValues(
-                                constraintValues,
-                                contextDefinition.legalValues,
-                            )}
-                            constraintValues={constraintValues}
-                            values={localConstraint.values || []}
-                            setValuesWithRecord={setValuesWithRecord}
-                            setValues={setValues}
-                            error={error}
-                            setError={setError}
-                        />
-                    </>
+                    <RestrictiveLegalValues
+                        data={resolveLegalValues(
+                            constraintValues,
+                            contextDefinition.legalValues,
+                        )}
+                        constraintValues={constraintValues}
+                        values={localConstraint.values || []}
+                        setValuesWithRecord={setValuesWithRecord}
+                        setValues={setValues}
+                        error={error}
+                        setError={setError}
+                    />
                 );
             case NUM_OPERATORS_LEGAL_VALUES:
                 return (

@@ -1,6 +1,11 @@
 import type { Request, Response } from 'express';
 import Controller from '../../routes/controller';
-import { type IUnleashConfig, type IUnleashServices, NONE } from '../../types';
+import {
+    type IFlagResolver,
+    type IUnleashConfig,
+    type IUnleashServices,
+    NONE,
+} from '../../types';
 import type { Logger } from '../../logger';
 import type { IApiUser } from '../../types/api-user';
 import {
@@ -8,10 +13,10 @@ import {
     createRequestSchema,
     createResponseSchema,
     emptyResponse,
-    getStandardResponses,
     type FrontendApiClientSchema,
     frontendApiFeaturesSchema,
     type FrontendApiFeaturesSchema,
+    getStandardResponses,
 } from '../../openapi';
 import type { Context } from 'unleash-client';
 import { enrichContextWithIp } from './index';
@@ -34,7 +39,10 @@ interface ApiUserRequest<
 
 type Services = Pick<
     IUnleashServices,
-    'settingService' | 'frontendApiService' | 'openApiService'
+    | 'settingService'
+    | 'frontendApiService'
+    | 'openApiService'
+    | 'clientInstanceService'
 >;
 
 export default class FrontendAPIController extends Controller {
@@ -44,10 +52,13 @@ export default class FrontendAPIController extends Controller {
 
     private timer: Function;
 
+    private flagResolver: IFlagResolver;
+
     constructor(config: IUnleashConfig, services: Services) {
         super(config);
         this.logger = config.getLogger('frontend-api-controller.ts');
         this.services = services;
+        this.flagResolver = config.flagResolver;
 
         this.timer = (functionName: string) =>
             metricsHelper.wrapTimer(config.eventBus, FUNCTION_TIME, {
@@ -233,7 +244,9 @@ export default class FrontendAPIController extends Controller {
             req.user,
             req.body,
             req.ip,
+            req.headers['unleash-sdk'],
         );
+
         res.sendStatus(200);
     }
 

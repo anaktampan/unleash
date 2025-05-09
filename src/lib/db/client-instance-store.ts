@@ -35,6 +35,7 @@ const mapToDb = (client) => ({
     app_name: client.appName,
     instance_id: client.instanceId,
     sdk_version: client.sdkVersion || '',
+    sdk_type: client.sdkType,
     client_ip: client.clientIp,
     last_seen: client.lastSeen || 'now()',
     environment: client.environment || 'default',
@@ -60,9 +61,9 @@ export default class ClientInstanceStore implements IClientInstanceStore {
             });
     }
 
-    async removeInstancesOlderThanTwoDays(): Promise<void> {
+    async removeOldInstances(): Promise<void> {
         const rows = await this.db(TABLE)
-            .whereRaw("created_at < now() - interval '2 days'")
+            .whereRaw("last_seen < now() - interval '1 days'")
             .del();
 
         if (rows > 0) {

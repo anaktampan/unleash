@@ -13,7 +13,11 @@ import type {
 import type { IFeatureToggleStore } from '../../feature-toggle/types/feature-toggle-store-type';
 import type { IStrategyStore } from '../../../types/stores/strategy-store';
 import type { IClientInstanceStore } from '../../../types/stores/client-instance-store';
-import type { IClientApp, ISdkHeartbeat } from '../../../types/model';
+import type {
+    IClientApp,
+    IFrontendClientApp,
+    ISdkHeartbeat,
+} from '../../../types/model';
 import { clientRegisterSchema } from '../shared/schema';
 
 import type { IClientMetricsStoreV2 } from '../client-metrics/client-metrics-store-v2-type';
@@ -104,13 +108,20 @@ export default class ClientInstanceService {
         });
     }
 
-    public async registerClient(
+    public registerFrontendClient(data: IFrontendClientApp): void {
+        data.createdBy = SYSTEM_USER.username!;
+
+        this.seenClients[this.clientKey(data)] = data;
+    }
+
+    public async registerBackendClient(
         data: PartialSome<IClientApp, 'instanceId'>,
         clientIp: string,
     ): Promise<void> {
         const value = await clientRegisterSchema.validateAsync(data);
         value.clientIp = clientIp;
         value.createdBy = SYSTEM_USER.username!;
+        value.sdkType = 'backend';
         this.seenClients[this.clientKey(value)] = value;
         this.eventBus.emit(CLIENT_REGISTERED, value);
 
@@ -162,8 +173,19 @@ export default class ClientInstanceService {
             const uniqueRegistrations = Object.values(this.seenClients);
             const uniqueApps: Partial<IClientApplication>[] = Object.values(
                 uniqueRegistrations.reduce((soFar, reg) => {
-                    // eslint-disable-next-line no-param-reassign
-                    soFar[reg.appName] = reg;
+                    let existingProjects = [];
+                    if (soFar[`${reg.appName} ${reg.environment}`]) {
+                        existingProjects =
+                            soFar[`${reg.appName} ${reg.environment}`]
+                                .projects || [];
+                    }
+                    soFar[`${reg.appName} ${reg.environment}`] = {
+                        ...reg,
+                        projects: [
+                            ...existingProjects,
+                            ...(reg.projects || []),
+                        ],
+                    };
                     return soFar;
                 }, {}),
             );
@@ -294,8 +316,15 @@ export default class ClientInstanceService {
         await this.clientApplicationsStore.upsert(input);
     }
 
-    async removeInstancesOlderThanTwoDays(): Promise<void> {
-        return this.clientInstanceStore.removeInstancesOlderThanTwoDays();
+    async removeOldInstances(): Promise<void> {
+        return this.clientInstanceStore.removeOldInstances();
+    }
+
+    async removeInactiveApplications(): Promise<number> {
+        if (this.flagResolver.isEnabled('removeInactiveApplications')) {
+            return this.clientApplicationsStore.removeInactiveApplications();
+        }
+        return 0;
     }
 
     async getOutdatedSdks(): Promise<OutdatedSdksSchema['sdks']> {

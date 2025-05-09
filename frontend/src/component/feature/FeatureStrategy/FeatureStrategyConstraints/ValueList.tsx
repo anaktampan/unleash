@@ -1,29 +1,36 @@
 import Clear from '@mui/icons-material/Clear';
-import { Chip, type ChipProps, styled } from '@mui/material';
+import { Chip, type ChipProps, styled, type Theme } from '@mui/material';
 import { type FC, forwardRef, type PropsWithChildren, useRef } from 'react';
 
-const ValueListWrapper = styled('div')(({ theme }) => ({
-    display: 'flex',
-    flexFlow: 'row wrap',
-    gap: theme.spacing(1),
-}));
-
-const StyledList = styled('ul')({
-    listStyle: 'none',
-    padding: 0,
+const ValueListWrapper = styled('div')({
     display: 'contents',
 });
 
-const ValueChipBase = styled(
+const StyledList = styled('ul')({
+    listStyle: 'none',
+    display: 'contents',
+});
+
+export const baseChipStyles = (theme: Theme) => ({
+    ':hover': { background: theme.palette.secondary.light },
+    ':focus-visible': {
+        background: theme.palette.background.elevation1,
+        outlineColor: theme.palette.secondary.dark,
+    },
+    background: theme.palette.background.elevation1,
+    color: theme.palette.text.primary,
+    height: 'auto',
+    outline: `1px solid #0000`,
+    transition: 'all 0.3s ease',
+});
+
+export const ValueChip = styled(
     forwardRef<HTMLDivElement, ChipProps>((props, ref) => (
-        <Chip size='small' {...props} ref={ref} />
+        <Chip size='small' {...props} ref={ref} deleteIcon={<Clear />} />
     )),
 )(({ theme }) => ({
-    transition: 'all 0.3s ease',
-    outline: `1px solid #0000`,
-    background: theme.palette.secondary.light,
-    color: theme.palette.secondary.dark,
-    border: `1px solid ${theme.palette.secondary.border}`,
+    ...baseChipStyles(theme),
+    color: theme.palette.text.primary,
     padding: 0,
     height: 'auto',
     '& .MuiChip-label': {
@@ -34,15 +41,6 @@ const ValueChipBase = styled(
     '& .MuiChip-deleteIcon': {
         marginRight: theme.spacing(1),
     },
-    ':hover, :focus-visible': {
-        background: theme.palette.secondary.light,
-    },
-    ':focus-visible': {
-        outlineColor: theme.palette.secondary.dark,
-    },
-}));
-
-const ValueChip = styled(ValueChipBase)(({ theme }) => ({
     svg: {
         fill: theme.palette.secondary.dark,
         borderRadius: '50%',
@@ -56,9 +54,8 @@ const ValueChip = styled(ValueChipBase)(({ theme }) => ({
 }));
 
 type Props = {
-    values: string[] | undefined;
-    removeValue: (index: number) => void;
-    setValues: (values: string[]) => void;
+    values?: string[];
+    removeValue: (value: string) => void;
     // the element that should receive focus when all value chips are deleted
     getExternalFocusTarget: () => HTMLElement | null;
 };
@@ -94,11 +91,17 @@ export const ValueList: FC<PropsWithChildren<Props>> = ({
                             ref={(el) => {
                                 constraintElementRefs.current[index] = el;
                             }}
-                            deleteIcon={<Clear />}
+                            sx={{
+                                height: 'auto',
+                                '& .MuiChip-label': {
+                                    display: 'block',
+                                    whiteSpace: 'normal',
+                                },
+                            }}
                             label={value}
                             onDelete={() => {
                                 nextFocusTarget(index)?.focus();
-                                removeValue(index);
+                                removeValue(value);
                             }}
                         />
                     </li>

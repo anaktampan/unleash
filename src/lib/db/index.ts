@@ -65,6 +65,9 @@ import { UserUnsubscribeStore } from '../features/user-subscriptions/user-unsubs
 import { UserSubscriptionsReadModel } from '../features/user-subscriptions/user-subscriptions-read-model';
 import { UniqueConnectionStore } from '../features/unique-connection/unique-connection-store';
 import { UniqueConnectionReadModel } from '../features/unique-connection/unique-connection-read-model';
+import { FeatureLinkStore } from '../features/feature-links/feature-link-store';
+import { UnknownFlagsStore } from '../features/metrics/unknown-flags/unknown-flags-store';
+import { FeatureLinksReadModel } from '../features/feature-links/feature-links-read-model';
 
 export const createStores = (
     config: IUnleashConfig,
@@ -181,10 +184,7 @@ export const createStores = (
         featureStrategiesReadModel: new FeatureStrategiesReadModel(db),
         onboardingReadModel: createOnboardingReadModel(db),
         onboardingStore: new OnboardingStore(db),
-        featureLifecycleReadModel: new FeatureLifecycleReadModel(
-            db,
-            config.flagResolver,
-        ),
+        featureLifecycleReadModel: new FeatureLifecycleReadModel(db),
         largestResourcesReadModel: new LargestResourcesReadModel(db),
         integrationEventsStore: new IntegrationEventsStore(db, { eventBus }),
         featureCollaboratorsReadModel: new FeatureCollaboratorsReadModel(db),
@@ -204,6 +204,9 @@ export const createStores = (
         releasePlanMilestoneStore: new ReleasePlanMilestoneStore(db, config),
         releasePlanMilestoneStrategyStore:
             new ReleasePlanMilestoneStrategyStore(db, config),
+        featureLinkStore: new FeatureLinkStore(db, config),
+        unknownFlagsStore: new UnknownFlagsStore(db),
+        featureLinkReadModel: new FeatureLinksReadModel(db, eventBus),
     };
 };
 

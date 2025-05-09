@@ -33,6 +33,7 @@ export const scheduleServices = async (
         clientMetricsServiceV2,
         integrationEventsService,
         uniqueConnectionService,
+        unknownFlagsService,
     } = services;
 
     schedulerService.schedule(
@@ -71,11 +72,17 @@ export const scheduleServices = async (
     );
 
     schedulerService.schedule(
-        clientInstanceService.removeInstancesOlderThanTwoDays.bind(
+        clientInstanceService.removeOldInstances.bind(clientInstanceService),
+        hoursToMilliseconds(24),
+        'removeInstancesOlderThanTwoDays',
+    );
+
+    schedulerService.schedule(
+        clientInstanceService.removeInactiveApplications.bind(
             clientInstanceService,
         ),
         hoursToMilliseconds(24),
-        'removeInstancesOlderThanTwoDays',
+        'removeInactiveApplications',
     );
 
     schedulerService.schedule(
@@ -185,5 +192,17 @@ export const scheduleServices = async (
         uniqueConnectionService.sync.bind(uniqueConnectionService),
         minutesToMilliseconds(10),
         'uniqueConnectionService',
+    );
+
+    schedulerService.schedule(
+        unknownFlagsService.flush.bind(unknownFlagsService),
+        minutesToMilliseconds(2),
+        'flushUnknownFlags',
+    );
+
+    schedulerService.schedule(
+        unknownFlagsService.clear.bind(unknownFlagsService, 24),
+        hoursToMilliseconds(24),
+        'clearUnknownFlags',
     );
 };

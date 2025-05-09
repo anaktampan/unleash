@@ -1,8 +1,6 @@
 import type { FC } from 'react';
 import type { FeatureStrategySchema } from 'openapi';
 import type { IFeatureStrategyPayload } from 'interfaces/strategy';
-import { useUiFlag } from 'hooks/useUiFlag';
-import { StrategyExecution as LegacyStrategyExecution } from './LegacyStrategyExecution';
 import { ConstraintAccordionView } from 'component/common/NewConstraintAccordion/ConstraintAccordionView/ConstraintAccordionView';
 import { useStrategies } from 'hooks/api/getters/useStrategies/useStrategies';
 import { objectId } from 'utils/objectId';
@@ -14,6 +12,7 @@ import {
     ConstraintListItem,
     ConstraintsList,
 } from 'component/common/ConstraintsList/ConstraintsList';
+import { RolloutVariants } from './RolloutVariants/RolloutVariants';
 
 type StrategyExecutionProps = {
     strategy: IFeatureStrategyPayload | FeatureStrategySchema;
@@ -36,33 +35,27 @@ export const StrategyExecution: FC<StrategyExecutionProps> = ({
     const strategySegments = segments?.filter((segment) =>
         strategy.segments?.includes(segment.id),
     );
-    const flagOverviewRedesign = useUiFlag('flagOverviewRedesign');
-
-    if (!flagOverviewRedesign) {
-        return (
-            <LegacyStrategyExecution
-                strategy={strategy}
-                displayGroupId={displayGroupId}
-            />
-        );
-    }
 
     return (
-        <ConstraintsList>
-            {strategySegments?.map((segment) => (
-                <SegmentItem segment={segment} key={segment.id} />
-            ))}
-            {constraints?.map((constraint, index) => (
-                <ConstraintAccordionView
-                    key={`${objectId(constraint)}-${index}`}
-                    constraint={constraint}
-                />
-            ))}
-            {(isCustomStrategy ? customStrategyItems : strategyParameters).map(
-                (item, index) => (
+        <>
+            <ConstraintsList>
+                {strategySegments?.map((segment) => (
+                    <SegmentItem segment={segment} key={segment.id} />
+                ))}
+                {constraints?.map((constraint, index) => (
+                    <ConstraintAccordionView
+                        key={`${objectId(constraint)}-${index}`}
+                        constraint={constraint}
+                    />
+                ))}
+                {(isCustomStrategy
+                    ? customStrategyItems
+                    : strategyParameters
+                ).map((item, index) => (
                     <ConstraintListItem key={index}>{item}</ConstraintListItem>
-                ),
-            )}
-        </ConstraintsList>
+                ))}
+            </ConstraintsList>
+            <RolloutVariants variants={strategy.variants} />
+        </>
     );
 };
