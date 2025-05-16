@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Variant } from 'utils/variants';
-import type { ResourceLimitsSchema } from '../openapi';
+import type { ResourceLimitsSchema } from 'openapi';
 import {} from '@unleash/proxy-client-react/dist/FlagContext';
 import type { IMutableContext } from 'unleash-proxy-client';
 
@@ -19,7 +19,7 @@ export interface IUiConfig {
     name: string;
     slogan: string;
     environment?: string;
-    billing?: 'subscription' | 'pay-as-you-go';
+    billing?: 'subscription' | 'pay-as-you-go' | 'enterprise-consumption';
     unleashUrl?: string;
     version: string;
     versionInfo?: IVersionInfo;
@@ -29,8 +29,6 @@ export interface IUiConfig {
     prometheusAPIAvailable: boolean;
     maintenanceMode?: boolean;
     toast?: IProclamationToast;
-    segmentValuesLimit?: number;
-    strategySegmentsLimit?: number;
     frontendApiOrigins?: string[];
     resourceLimits: ResourceLimitsSchema;
     oidcConfiguredThroughEnv?: boolean;
@@ -54,7 +52,6 @@ export type UiFlags = {
     T?: boolean;
     UNLEASH_CLOUD?: boolean;
     UG?: boolean;
-    embedProxyFrontend?: boolean;
     maintenanceMode?: boolean;
     messageBanner?: Variant;
     banner?: Variant;
@@ -87,16 +84,13 @@ export type UiFlags = {
     'enterprise-payg'?: boolean;
     productivityReportEmail?: boolean;
     showUserDeviceCount?: boolean;
-    flagOverviewRedesign?: boolean;
     consumptionModel?: boolean;
     edgeObservability?: boolean;
-    adminNavUI?: boolean;
-    tagTypeColor?: boolean;
-    globalChangeRequestConfig?: boolean;
     addEditStrategy?: boolean;
-    newStrategyDropdown?: boolean;
-    flagsReleaseManagementUI?: boolean;
     cleanupReminder?: boolean;
+    registerFrontendClient?: boolean;
+    featureLinks?: boolean;
+    projectLinkTemplates?: boolean;
 };
 
 export interface IVersionInfo {

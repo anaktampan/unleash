@@ -1,18 +1,20 @@
-import dbInit, { type ITestDb } from '../../../test/e2e/helpers/database-init';
+import dbInit, {
+    type ITestDb,
+} from '../../../test/e2e/helpers/database-init.js';
 import {
     insertLastSeenAt,
     type IUnleashTest,
     setupAppWithAuth,
-} from '../../../test/e2e/helpers/test-helper';
-import getLogger from '../../../test/fixtures/no-logger';
-import type { FeatureSearchQueryParameters } from '../../openapi/spec/feature-search-query-parameters';
+} from '../../../test/e2e/helpers/test-helper.js';
+import getLogger from '../../../test/fixtures/no-logger.js';
+import type { FeatureSearchQueryParameters } from '../../openapi/spec/feature-search-query-parameters.js';
 import {
     CREATE_FEATURE_STRATEGY,
     DEFAULT_PROJECT,
     type IUnleashStores,
     UPDATE_FEATURE_ENVIRONMENT,
-} from '../../types';
-import { DEFAULT_ENV } from '../../util';
+} from '../../types/index.js';
+import { DEFAULT_ENV } from '../../util/index.js';
 
 let app: IUnleashTest;
 let db: ITestDb;
@@ -29,7 +31,6 @@ beforeAll(async () => {
                 flags: {
                     strictSchemaValidation: true,
                     anonymiseEventLog: true,
-                    flagsOverviewSearch: true,
                 },
             },
         },
@@ -223,7 +224,9 @@ const searchFeaturesWithoutQueryParams = async (expectedCode = 200) => {
 };
 const getProjectArchive = async (projectId = 'default', expectedCode = 200) => {
     return app.request
-        .get(`/api/admin/archive/features/${projectId}`)
+        .get(
+            `/api/admin/search/features?project=IS%3A${projectId}&archived=IS%3Atrue`,
+        )
         .expect(expectedCode);
 };
 

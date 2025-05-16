@@ -1,32 +1,27 @@
-import EnvironmentService from './environment-service';
-import { createTestConfig } from '../../../test/config/test-config';
-import dbInit, { type ITestDb } from '../../../test/e2e/helpers/database-init';
-import NotFoundError from '../../error/notfound-error';
+import EnvironmentService from './environment-service.js';
+import { createTestConfig } from '../../../test/config/test-config.js';
+import dbInit, {
+    type ITestDb,
+} from '../../../test/e2e/helpers/database-init.js';
+import NotFoundError from '../../error/notfound-error.js';
 import {
-    type IExperimentalOptions,
     type IUnleashStores,
     SYSTEM_USER,
     SYSTEM_USER_AUDIT,
-} from '../../types';
-import NameExistsError from '../../error/name-exists-error';
-import type { EventService } from '../../services';
-import { createEventsService } from '../events/createEventsService';
-
+} from '../../types/index.js';
+import NameExistsError from '../../error/name-exists-error.js';
+import type { EventService } from '../../services/index.js';
+import { createEventsService } from '../events/createEventsService.js';
+import { test, beforeAll, afterAll, expect } from 'vitest';
 let stores: IUnleashStores;
 let db: ITestDb;
 let service: EnvironmentService;
 let eventService: EventService;
 
 beforeAll(async () => {
-    const flags: Partial<IExperimentalOptions> = {
-        flags: { globalChangeRequestConfig: true },
-    };
-    const config = createTestConfig({
-        experimental: flags,
-    });
+    const config = createTestConfig();
     db = await dbInit('environment_service_serial', config.getLogger, {
         dbInitMethod: 'legacy' as const,
-        experimental: flags,
     });
     stores = db.stores;
     eventService = createEventsService(db.rawDatabase, config);
@@ -224,25 +219,26 @@ test('Adding same environment twice should throw a NameExistsError', async () =>
             'default',
             SYSTEM_USER_AUDIT,
         ),
-    ).rejects.toThrow(
+    ).rejects.errorWithMessage(
         new NameExistsError(
             'default already has the environment uniqueness-test enabled',
         ),
     );
 });
 
-test('Removing environment not connected to project should be a noop', async () =>
-    expect(async () =>
+test('Removing environment not connected to project should be a noop', async () => {
+    await expect(
         service.removeEnvironmentFromProject(
             'some-non-existing-environment',
             'default',
             SYSTEM_USER_AUDIT,
         ),
-    ).resolves);
+    ).resolves;
+});
 
 test('Trying to get an environment that does not exist throws NotFoundError', async () => {
     const envName = 'this-should-not-exist';
-    await expect(async () => service.get(envName)).rejects.toThrow(
+    await expect(async () => service.get(envName)).rejects.errorWithMessage(
         new NotFoundError(`Could not find environment with name: ${envName}`),
     );
 });

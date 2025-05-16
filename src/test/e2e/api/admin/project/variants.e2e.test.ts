@@ -1,25 +1,29 @@
 import {
     type IUnleashTest,
     setupAppWithCustomConfig,
-} from '../../../helpers/test-helper';
-import dbInit, { type ITestDb } from '../../../helpers/database-init';
-import getLogger from '../../../../fixtures/no-logger';
-import * as jsonpatch from 'fast-json-patch';
-import { type IVariant, WeightType } from '../../../../../lib/types/model';
+} from '../../../helpers/test-helper.js';
+import dbInit, { type ITestDb } from '../../../helpers/database-init.js';
+import getLogger from '../../../../fixtures/no-logger.js';
+import * as jsonpatch from 'fast-json-patch/index.mjs';
+import { type IVariant, WeightType } from '../../../../../lib/types/model.js';
 
 let app: IUnleashTest;
 let db: ITestDb;
 
 beforeAll(async () => {
     db = await dbInit('project_feature_variants_api_serial', getLogger);
-    app = await setupAppWithCustomConfig(db.stores, {
-        experimental: {
-            flags: {
-                strictSchemaValidation: true,
-                enableLegacyVariants: true,
+    app = await setupAppWithCustomConfig(
+        db.stores,
+        {
+            experimental: {
+                flags: {
+                    strictSchemaValidation: true,
+                    enableLegacyVariants: true,
+                },
             },
         },
-    });
+        db.rawDatabase,
+    );
 });
 
 afterAll(async () => {

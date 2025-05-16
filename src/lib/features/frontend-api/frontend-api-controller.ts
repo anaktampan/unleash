@@ -1,27 +1,31 @@
 import type { Request, Response } from 'express';
-import Controller from '../../routes/controller';
-import { type IUnleashConfig, type IUnleashServices, NONE } from '../../types';
-import type { Logger } from '../../logger';
-import type { IApiUser } from '../../types/api-user';
+import Controller from '../../routes/controller.js';
+import {
+    type IFlagResolver,
+    type IUnleashConfig,
+    NONE,
+} from '../../types/index.js';
+import type { Logger } from '../../logger.js';
+import type { IApiUser } from '../../types/api-user.js';
 import {
     type ClientMetricsSchema,
     createRequestSchema,
     createResponseSchema,
     emptyResponse,
-    getStandardResponses,
     type FrontendApiClientSchema,
     frontendApiFeaturesSchema,
     type FrontendApiFeaturesSchema,
-} from '../../openapi';
+    getStandardResponses,
+} from '../../openapi/index.js';
 import type { Context } from 'unleash-client';
-import { enrichContextWithIp } from './index';
-import { corsOriginMiddleware } from '../../middleware';
-import NotImplementedError from '../../error/not-implemented-error';
-import NotFoundError from '../../error/notfound-error';
+import { enrichContextWithIp } from './index.js';
+import { corsOriginMiddleware } from '../../middleware/index.js';
+import NotImplementedError from '../../error/not-implemented-error.js';
 import rateLimit from 'express-rate-limit';
 import { minutesToMilliseconds } from 'date-fns';
-import metricsHelper from '../../util/metrics-helper';
-import { FUNCTION_TIME } from '../../metric-events';
+import metricsHelper from '../../util/metrics-helper.js';
+import { FUNCTION_TIME } from '../../metric-events.js';
+import type { IUnleashServices } from '../../services/index.js';
 
 interface ApiUserRequest<
     PARAM = any,
@@ -34,7 +38,10 @@ interface ApiUserRequest<
 
 type Services = Pick<
     IUnleashServices,
-    'settingService' | 'frontendApiService' | 'openApiService'
+    | 'settingService'
+    | 'frontendApiService'
+    | 'openApiService'
+    | 'clientInstanceService'
 >;
 
 export default class FrontendAPIController extends Controller {
@@ -44,10 +51,13 @@ export default class FrontendAPIController extends Controller {
 
     private timer: Function;
 
+    private flagResolver: IFlagResolver;
+
     constructor(config: IUnleashConfig, services: Services) {
         super(config);
         this.logger = config.getLogger('frontend-api-controller.ts');
         this.services = services;
+        this.flagResolver = config.flagResolver;
 
         this.timer = (functionName: string) =>
             metricsHelper.wrapTimer(config.eventBus, FUNCTION_TIME, {
@@ -197,9 +207,6 @@ export default class FrontendAPIController extends Controller {
         req: ApiUserRequest,
         res: Response<FrontendApiFeaturesSchema>,
     ) {
-        if (!this.config.flagResolver.isEnabled('embedProxy')) {
-            throw new NotFoundError();
-        }
         const toggles =
             await this.services.frontendApiService.getFrontendApiFeatures(
                 req.user,
@@ -220,10 +227,6 @@ export default class FrontendAPIController extends Controller {
         req: ApiUserRequest<unknown, unknown, ClientMetricsSchema>,
         res: Response,
     ) {
-        if (!this.config.flagResolver.isEnabled('embedProxy')) {
-            throw new NotFoundError();
-        }
-
         if (this.config.flagResolver.isEnabled('disableMetrics')) {
             res.sendStatus(204);
             return;
@@ -233,7 +236,9 @@ export default class FrontendAPIController extends Controller {
             req.user,
             req.body,
             req.ip,
+            req.headers['unleash-sdk'],
         );
+
         res.sendStatus(200);
     }
 
@@ -241,9 +246,6 @@ export default class FrontendAPIController extends Controller {
         req: ApiUserRequest<unknown, unknown, FrontendApiClientSchema>,
         res: Response<string>,
     ) {
-        if (!this.config.flagResolver.isEnabled('embedProxy')) {
-            throw new NotFoundError();
-        }
         // Client registration is not yet supported by @unleash/proxy,
         // but proxy clients may still expect a 200 from this endpoint.
         res.sendStatus(200);

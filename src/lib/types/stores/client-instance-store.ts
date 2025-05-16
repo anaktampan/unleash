@@ -1,4 +1,4 @@
-import type { Store } from './store';
+import type { Store } from './store.js';
 
 export interface IClientInstance extends INewClientInstance {
     createdAt: Date;
@@ -18,6 +18,10 @@ export interface IClientInstanceStore
         Pick<INewClientInstance, 'appName' | 'instanceId'>
     > {
     bulkUpsert(instances: INewClientInstance[]): Promise<void>;
+    /**
+     * @deprecated
+     * `bulkUpsert` is beeing used instead. remove with `lastSeenBulkQuery` flag
+     */
     setLastSeen(INewClientInstance): Promise<void>;
     insert(details: INewClientInstance): Promise<void>;
     getByAppName(appName: string): Promise<IClientInstance[]>;
@@ -35,5 +39,5 @@ export interface IClientInstanceStore
     getDistinctApplications(): Promise<string[]>;
     getDistinctApplicationsCount(daysBefore?: number): Promise<number>;
     deleteForApplication(appName: string): Promise<void>;
-    removeInstancesOlderThanTwoDays(): Promise<void>;
+    removeOldInstances(): Promise<void>;
 }

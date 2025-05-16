@@ -1,7 +1,9 @@
-import type { ISettingStore, IUnleashConfig } from '../types';
-import { createTestConfig } from '../../test/config/test-config';
-import { compareAndLogPostgresVersion } from './postgres-version-checker';
-import FakeSettingStore from '../../test/fixtures/fake-setting-store';
+import type { ISettingStore, IUnleashConfig } from '../types/index.js';
+import { createTestConfig } from '../../test/config/test-config.js';
+import { compareAndLogPostgresVersion } from './postgres-version-checker.js';
+import FakeSettingStore from '../../test/fixtures/fake-setting-store.js';
+
+import { vi } from 'vitest';
 
 let config: IUnleashConfig;
 let settingStore: ISettingStore;
@@ -10,7 +12,7 @@ let errorMessages: string[];
 
 const fakeSettingStore = (postgresVersion: string): ISettingStore => {
     const temp = new FakeSettingStore();
-    jest.spyOn(temp, 'postgresVersion').mockResolvedValue(postgresVersion);
+    vi.spyOn(temp, 'postgresVersion').mockResolvedValue(postgresVersion);
     return temp;
 };
 

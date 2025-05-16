@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import type {
-    IAccessInfo,
     IAccessStore,
     IProjectRoleUsage,
     IRole,
@@ -8,16 +7,16 @@ import type {
     IUserPermission,
     IUserRole,
     IUserWithProjectRoles,
-} from '../../lib/types/stores/access-store';
-import type { IPermission } from '../../lib/types/model';
+} from '../../lib/types/stores/access-store.js';
+import type { IPermission } from '../../lib/types/model.js';
 import {
     type IRoleStore,
     type IUserAccessOverview,
     RoleName,
     RoleType,
-} from '../../lib/types';
-import FakeRoleStore from './fake-role-store';
-import type { PermissionRef } from '../../lib/services/access-service';
+} from '../../lib/types/index.js';
+import FakeRoleStore from './fake-role-store.js';
+import type { PermissionRef } from '../../lib/services/access-service.js';
 
 export class FakeAccessStore implements IAccessStore {
     fakeRolesStore: IRoleStore;
@@ -40,16 +39,6 @@ export class FakeAccessStore implements IAccessStore {
         userId: number,
         project: string,
     ): Promise<IRoleWithProject[]> {
-        throw new Error('Method not implemented.');
-    }
-
-    addRoleAccessToProject(
-        users: IAccessInfo[],
-        groups: IAccessInfo[],
-        projectId: string,
-        roleId: number,
-        createdBy: string,
-    ): Promise<void> {
         throw new Error('Method not implemented.');
     }
 
@@ -326,7 +315,5 @@ export class FakeAccessStore implements IAccessStore {
         }
     }
 }
-
-module.exports = FakeAccessStore;
 
 export default FakeAccessStore;

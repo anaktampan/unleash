@@ -10,7 +10,6 @@ import ResetPassword from 'component/user/ResetPassword/ResetPassword';
 import ForgottenPassword from 'component/user/ForgottenPassword/ForgottenPassword';
 import { ProjectList } from 'component/project/ProjectList/ProjectList';
 import { ArchiveProjectList } from 'component/project/ProjectList/ArchiveProjectList';
-import RedirectArchive from 'component/archive/RedirectArchive';
 import CreateEnvironment from 'component/environments/CreateEnvironment/CreateEnvironment';
 import EditEnvironment from 'component/environments/EditEnvironment/EditEnvironment';
 import { EditContext } from 'component/context/EditContext/EditContext';
@@ -30,8 +29,8 @@ import { CreateSegment } from 'component/segments/CreateSegment/CreateSegment';
 import { EditSegment } from 'component/segments/EditSegment/EditSegment';
 import type { INavigationMenuItem, IRoute } from 'interfaces/route';
 import { EnvironmentTable } from 'component/environments/EnvironmentTable/EnvironmentTable';
-import { SegmentTable } from '../segments/SegmentTable/SegmentTable';
-import { FeaturesArchiveTable } from '../archive/FeaturesArchiveTable';
+import { SegmentTable } from '../segments/SegmentTable/SegmentTable.jsx';
+import { FeaturesArchiveTable } from 'component/archive/FeaturesArchiveTable';
 import { LazyPlayground } from 'component/playground/Playground/LazyPlayground';
 import { Profile } from 'component/user/Profile/Profile';
 import { LazyFeatureView } from 'component/feature/FeatureView/LazyFeatureView';
@@ -40,14 +39,14 @@ import { LazyProject } from 'component/project/Project/LazyProject';
 import { LoginHistory } from 'component/loginHistory/LoginHistory';
 import { FeatureTypesList } from 'component/featureTypes/FeatureTypesList';
 import { ViewIntegration } from 'component/integrations/ViewIntegration/ViewIntegration';
-import { PaginatedApplicationList } from '../application/ApplicationList/PaginatedApplicationList';
+import { PaginatedApplicationList } from '../application/ApplicationList/PaginatedApplicationList.jsx';
 import { AddonRedirect } from 'component/integrations/AddonRedirect/AddonRedirect';
-import { Insights } from '../insights/Insights';
-import { FeedbackList } from '../feedbackNew/FeedbackList';
+import { Insights } from '../insights/Insights.jsx';
+import { FeedbackList } from '../feedbackNew/FeedbackList.jsx';
 import { Application } from 'component/application/Application';
 import { Signals } from 'component/signals/Signals';
-import { LazyCreateProject } from '../project/Project/CreateProject/LazyCreateProject';
-import { PersonalDashboard } from '../personalDashboard/PersonalDashboard';
+import { LazyCreateProject } from '../project/Project/CreateProject/LazyCreateProject.jsx';
+import { PersonalDashboard } from '../personalDashboard/PersonalDashboard.jsx';
 import { ReleaseManagement } from 'component/releases/ReleaseManagement/ReleaseManagement';
 import { CreateReleasePlanTemplate } from 'component/releases/ReleasePlanTemplate/CreateReleasePlanTemplate';
 import { EditReleasePlanTemplate } from 'component/releases/ReleasePlanTemplate/EditReleasePlanTemplate';
@@ -79,14 +78,6 @@ export const routes: IRoute[] = [
         component: LazyCreateProject,
         type: 'protected',
         enterprise: true,
-        menu: {},
-    },
-    {
-        path: '/projects/:projectId/archived',
-        title: ':projectId',
-        parent: '/archive',
-        component: RedirectArchive,
-        type: 'protected',
         menu: {},
     },
     {
@@ -135,24 +126,16 @@ export const routes: IRoute[] = [
         component: ArchiveProjectList,
         type: 'protected',
         menu: {},
+        enterprise: true,
     },
 
     // Flags overview
-    {
-        path: '/search',
-        title: 'Search',
-        component: FeatureToggleListTable,
-        type: 'protected',
-        menu: { primary: true },
-        notFlag: 'flagsReleaseManagementUI',
-    },
     {
         path: '/search',
         title: 'Flags overview',
         component: FeatureToggleListTable,
         type: 'protected',
         menu: { primary: true },
-        flag: 'flagsReleaseManagementUI',
     },
 
     // Playground

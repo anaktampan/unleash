@@ -1,21 +1,24 @@
 import supertest, { type Test } from 'supertest';
-import getApp from '../../../app';
-import { createTestConfig } from '../../../../test/config/test-config';
-import { clientMetricsSchema } from '../shared/schema';
-import { createServices } from '../../../services';
+import getApp from '../../../app.js';
+import { createTestConfig } from '../../../../test/config/test-config.js';
+import { clientMetricsSchema } from '../shared/schema.js';
+import {
+    type IUnleashServices,
+    createServices,
+} from '../../../services/index.js';
 import {
     IAuthType,
     type IUnleashConfig,
     type IUnleashOptions,
-    type IUnleashServices,
     type IUnleashStores,
-} from '../../../types';
+} from '../../../types/index.js';
 import dbInit, {
     type ITestDb,
-} from '../../../../test/e2e/helpers/database-init';
+} from '../../../../test/e2e/helpers/database-init.js';
 import { startOfHour } from 'date-fns';
-import { ApiTokenType } from '../../../types/models/api-token';
-import type TestAgent from 'supertest/lib/agent';
+import { ApiTokenType } from '../../../types/model.js';
+import type TestAgent from 'supertest/lib/agent.d.ts';
+import type { BulkRegistrationSchema } from '../../../openapi/index.js';
 
 let db: ITestDb;
 let config: IUnleashConfig;
@@ -41,7 +44,13 @@ let services: IUnleashServices;
 let destroy: () => Promise<void>;
 
 beforeAll(async () => {
-    const setup = await getSetup();
+    const setup = await getSetup({
+        experimental: {
+            flags: {
+                registerFrontendClient: true,
+            },
+        },
+    });
     request = setup.request;
     stores = setup.stores;
     destroy = setup.destroy;
@@ -54,6 +63,7 @@ afterAll(async () => {
 
 afterEach(async () => {
     await stores.featureToggleStore.deleteAll();
+    await stores.clientApplicationsStore.deleteAll();
 });
 
 test('should validate client metrics', () => {
@@ -96,29 +106,6 @@ test('should accept client metrics with yes/no', () => {
             },
         })
         .expect(202);
-});
-
-test('should accept client metrics with yes/no with metricsV2', async () => {
-    const testRunner = await getSetup();
-    await testRunner.request
-        .post('/api/client/metrics')
-        .send({
-            appName: 'demo',
-            instanceId: '1',
-            bucket: {
-                start: Date.now(),
-                stop: Date.now(),
-                toggles: {
-                    toggleA: {
-                        yes: 200,
-                        no: 0,
-                    },
-                },
-            },
-        })
-        .expect(202);
-
-    testRunner.destroy();
 });
 
 test('should accept client metrics with variants', () => {
@@ -274,6 +261,161 @@ test('should return 204 if metrics are disabled by feature flag', async () => {
 });
 
 describe('bulk metrics', () => {
+    test('should separate frontend applications and backend applications', async () => {
+        const frontendApp: BulkRegistrationSchema = {
+            appName: 'application-name',
+            instanceId: 'browser',
+            environment: 'development',
+            sdkVersion: 'unleash-client-js:1.0.0',
+            sdkType: 'frontend',
+        };
+        const backendApp: BulkRegistrationSchema = {
+            appName: 'application-name',
+            instanceId: 'instance1234',
+            environment: 'development',
+            sdkVersion: 'unleash-client-node',
+            sdkType: 'backend',
+            started: '1952-03-11T12:00:00.000Z',
+            interval: 15000,
+        };
+        const defaultApp: BulkRegistrationSchema = {
+            appName: 'application-name',
+            instanceId: 'instance5678',
+            environment: 'development',
+            sdkVersion: 'unleash-client-java',
+            sdkType: null,
+            started: '1952-03-11T12:00:00.000Z',
+            interval: 15000,
+        };
+        await request
+            .post('/api/client/metrics/bulk')
+            .send({
+                applications: [frontendApp, backendApp, defaultApp],
+                metrics: [],
+            })
+            .expect(202);
+
+        await services.clientInstanceService.bulkAdd();
+        const app =
+            await services.clientInstanceService.getApplication(
+                'application-name',
+            );
+
+        expect(app).toMatchObject({
+            appName: 'application-name',
+            instances: [
+                {
+                    instanceId: 'browser',
+                    sdkVersion: 'unleash-client-js:1.0.0',
+                    environment: 'development',
+                },
+                {
+                    instanceId: 'instance1234',
+                    sdkVersion: 'unleash-client-node',
+                    environment: 'development',
+                },
+                {
+                    instanceId: 'instance5678',
+                    sdkVersion: 'unleash-client-java',
+                    environment: 'development',
+                },
+            ],
+        });
+    });
+
+    test('should respect project from token', async () => {
+        const frontendApp: BulkRegistrationSchema = {
+            appName: 'application-name-token',
+            instanceId: 'browser',
+            environment: 'production',
+            sdkVersion: 'unleash-client-js:1.0.0',
+            sdkType: 'frontend',
+            projects: ['project-a', 'project-b'],
+        };
+        const backendApp: BulkRegistrationSchema = {
+            appName: 'application-name-token',
+            instanceId: 'instance1234',
+            environment: 'development',
+            sdkVersion: 'unleash-client-node',
+            sdkType: 'backend',
+            started: '1952-03-11T12:00:00.000Z',
+            interval: 15000,
+            projects: ['project-b', 'project-c'],
+        };
+        const defaultApp: BulkRegistrationSchema = {
+            appName: 'application-name-token',
+            instanceId: 'instance5678',
+            environment: 'development',
+            sdkVersion: 'unleash-client-java',
+            sdkType: null,
+            started: '1952-03-11T12:00:00.000Z',
+            interval: 15000,
+            projects: ['project-c', 'project-d'],
+        };
+        await request
+            .post('/api/client/metrics/bulk')
+            .send({
+                applications: [frontendApp, backendApp, defaultApp],
+                metrics: [],
+            })
+            .expect(202);
+
+        await services.clientInstanceService.bulkAdd();
+        const app = await services.clientInstanceService.getApplication(
+            'application-name-token',
+        );
+
+        expect(app).toMatchObject({
+            appName: 'application-name-token',
+            instances: [
+                {
+                    instanceId: 'instance1234',
+                    sdkVersion: 'unleash-client-node',
+                    environment: 'development',
+                },
+                {
+                    instanceId: 'instance5678',
+                    sdkVersion: 'unleash-client-java',
+                    environment: 'development',
+                },
+                {
+                    instanceId: 'browser',
+                    sdkVersion: 'unleash-client-js:1.0.0',
+                    environment: 'production',
+                },
+            ],
+        });
+
+        const applications =
+            await stores.clientApplicationsStore.getApplications({
+                limit: 10,
+                offset: 0,
+                sortBy: 'name',
+                sortOrder: 'asc',
+            });
+        expect(applications).toMatchObject({
+            applications: [
+                {
+                    usage: [
+                        {
+                            project: 'project-a',
+                            environments: ['production'],
+                        },
+                        {
+                            project: 'project-b',
+                            environments: ['production', 'development'],
+                        },
+                        {
+                            project: 'project-c',
+                            environments: ['development'],
+                        },
+                        { project: 'project-d', environments: ['development'] },
+                    ],
+                },
+            ],
+        });
+    });
+
     test('filters out metrics for environments we do not have access for. No auth setup so we can only access default env', async () => {
         const now = new Date();
 

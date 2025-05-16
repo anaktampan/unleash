@@ -2,7 +2,7 @@ import type { VFC } from 'react';
 import { Box, styled } from '@mui/material';
 import PermissionSwitch from 'component/common/PermissionSwitch/PermissionSwitch';
 import { UPDATE_FEATURE_ENVIRONMENT } from 'component/providers/AccessProvider/permissions';
-import { useOptimisticUpdate } from './hooks/useOptimisticUpdate';
+import { useOptimisticUpdate } from './hooks/useOptimisticUpdate.ts';
 import { flexRow } from 'themes/themeStyles';
 
 const StyledBoxContainer = styled(Box)<{ 'data-testid': string }>(() => ({
@@ -46,8 +46,8 @@ export const FeatureToggleSwitch: VFC<FeatureToggleSwitchProps> = ({
                 <PermissionSwitch
                     tooltip={
                         isChecked
-                            ? `Disable feature in ${environmentName}`
-                            : `Enable feature in ${environmentName}`
+                            ? `Disable flag in ${environmentName}`
+                            : `Enable flag in ${environmentName}`
                     }
                     checked={value}
                     environmentId={environmentName}

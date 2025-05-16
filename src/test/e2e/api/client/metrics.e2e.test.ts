@@ -1,11 +1,13 @@
 import {
     type IUnleashTest,
     setupAppWithCustomConfig,
-} from '../../helpers/test-helper';
-import metricsExample from '../../../examples/client-metrics.json';
-import dbInit, { type ITestDb } from '../../helpers/database-init';
-import getLogger from '../../../fixtures/no-logger';
-import { REQUEST_TIME } from '../../../../lib/metric-events';
+} from '../../helpers/test-helper.js';
+import metricsExample from '../../../examples/client-metrics.json' with {
+    type: 'json',
+};
+import dbInit, { type ITestDb } from '../../helpers/database-init.js';
+import getLogger from '../../../fixtures/no-logger.js';
+import { REQUEST_TIME } from '../../../../lib/metric-events.js';
 
 let app: IUnleashTest;
 let db: ITestDb;
@@ -22,6 +24,7 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
+    await app.services.clientInstanceService.bulkAdd(); // flush
     await Promise.all([
         db.stores.clientMetricsStoreV2.deleteAll(),
         db.stores.clientInstanceStore.deleteAll(),
@@ -71,6 +74,7 @@ test('should create instance if does not exist', async () => {
         .post('/api/client/metrics')
         .send(metricsExample)
         .expect(202);
+    await app.services.clientInstanceService.bulkAdd();
     const finalInstances = await db.stores.clientInstanceStore.getAll();
     expect(finalInstances.length).toBe(1);
 });

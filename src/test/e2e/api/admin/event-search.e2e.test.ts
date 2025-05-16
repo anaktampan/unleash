@@ -1,19 +1,24 @@
-import type { EventSearchQueryParameters } from '../../../../lib/openapi/spec/event-search-query-parameters';
-import dbInit, { type ITestDb } from '../../helpers/database-init';
+import type { EventSearchQueryParameters } from '../../../../lib/openapi/spec/event-search-query-parameters.js';
+import dbInit, { type ITestDb } from '../../helpers/database-init.js';
 
 import {
-    FEATURE_CREATED,
     type IUnleashConfig,
     type IUnleashStores,
     RoleName,
-    USER_CREATED,
-} from '../../../../lib/types';
-import type { AccessService, EventService } from '../../../../lib/services';
-import getLogger from '../../../fixtures/no-logger';
-import { type IUnleashTest, setupAppWithAuth } from '../../helpers/test-helper';
-import { createEventsService } from '../../../../lib/features';
-import { createTestConfig } from '../../../config/test-config';
-import type { IRole } from '../../../../lib/types/stores/access-store';
+} from '../../../../lib/types/index.js';
+import type {
+    AccessService,
+    EventService,
+} from '../../../../lib/services/index.js';
+import getLogger from '../../../fixtures/no-logger.js';
+import {
+    type IUnleashTest,
+    setupAppWithAuth,
+} from '../../helpers/test-helper.js';
+import { createEventsService } from '../../../../lib/features/index.js';
+import { createTestConfig } from '../../../config/test-config.js';
+import type { IRole } from '../../../../lib/types/stores/access-store.js';
+import { FEATURE_CREATED, USER_CREATED } from '../../../../lib/events/index.js';
 
 let app: IUnleashTest;
 let db: ITestDb;
@@ -570,6 +575,85 @@ test('should show user creation events for admins', async () => {
             },
             {
                 type: USER_CREATED,
+            },
+        ],
+        total: 2,
+    });
+});
+
+test('should filter events by environment', async () => {
+    await eventService.storeEvent({
+        type: FEATURE_CREATED,
+        project: 'default',
+        environment: 'production',
+        createdBy: 'test-user',
+        createdByUserId: TEST_USER_ID,
+        ip: '127.0.0.1',
+    });
+
+    await eventService.storeEvent({
+        type: FEATURE_CREATED,
+        project: 'default',
+        environment: 'staging',
+        createdBy: 'test-user',
+        createdByUserId: TEST_USER_ID,
+        ip: '127.0.0.1',
+    });
+
+    const { body } = await searchEvents({ environment: 'IS:production' });
+
+    expect(body).toMatchObject({
+        events: [
+            {
+                type: 'feature-created',
+                environment: 'production',
+            },
+        ],
+        total: 1,
+    });
+});
+
+test('should filter events by environment using IS_ANY_OF', async () => {
+    await eventService.storeEvent({
+        type: FEATURE_CREATED,
+        project: 'default',
+        environment: 'production',
+        createdBy: 'test-user',
+        createdByUserId: TEST_USER_ID,
+        ip: '127.0.0.1',
+    });
+
+    await eventService.storeEvent({
+        type: FEATURE_CREATED,
+        project: 'default',
+        environment: 'staging',
+        createdBy: 'test-user',
+        createdByUserId: TEST_USER_ID,
+        ip: '127.0.0.1',
+    });
+
+    await eventService.storeEvent({
+        type: FEATURE_CREATED,
+        project: 'default',
+        environment: 'development',
+        createdBy: 'test-user',
+        createdByUserId: TEST_USER_ID,
+        ip: '127.0.0.1',
+    });
+
+    const { body } = await searchEvents({
+        environment: 'IS_ANY_OF:production,staging',
+    });
+
+    expect(body).toMatchObject({
+        events: [
+            {
+                type: 'feature-created',
+                environment: 'staging',
+            },
+            {
+                type: 'feature-created',
+                environment: 'production',
             },
         ],
         total: 2,

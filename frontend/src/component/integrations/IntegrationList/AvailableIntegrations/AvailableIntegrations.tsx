@@ -1,11 +1,11 @@
 import type { VFC } from 'react';
 import { Box, Typography, styled } from '@mui/material';
 import type { AddonTypeSchema } from 'openapi';
-import { IntegrationCard } from '../IntegrationCard/IntegrationCard';
-import { JIRA_INFO } from '../../ViewIntegration/JiraIntegration/JiraIntegration';
+import { IntegrationCard } from '../IntegrationCard/IntegrationCard.tsx';
+import { JIRA_INFO } from '../../ViewIntegration/JiraIntegration/JiraIntegration.tsx';
 import { StyledCardsGrid } from '../IntegrationList.styles';
-import { RequestIntegrationCard } from '../RequestIntegrationCard/RequestIntegrationCard';
-import { OFFICIAL_SDKS } from './SDKs';
+import { RequestIntegrationCard } from '../RequestIntegrationCard/RequestIntegrationCard.tsx';
+import { OFFICIAL_SDKS } from './SDKs.ts';
 import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
 import { useUiFlag } from 'hooks/useUiFlag';
 import useUiConfig from 'hooks/api/getters/useUiConfig/useUiConfig';
@@ -121,6 +121,14 @@ export const AvailableIntegrations: VFC<IAvailableIntegrationsProps> = ({
                             />
                         ),
                     )}
+                    <IntegrationCard
+                        icon='terraform'
+                        title='Terraform'
+                        description={`Manage Unleash with HashiCorp’s Terraform using infrastructure as code (IaC).`}
+                        link='https://docs.getunleash.io/reference/terraform'
+                        configureActionText='View documentation'
+                        isExternal
+                    />
                     <RequestIntegrationCard />
                 </StyledCardsGrid>
             </StyledSection>
@@ -141,15 +149,6 @@ export const AvailableIntegrations: VFC<IAvailableIntegrationsProps> = ({
                         description="Unleash Edge is built to help you scale Unleash. As a successor of Unleash Proxy it's even faster and more versatile."
                         link='/integrations/view/edge'
                         configureActionText='Learn more'
-                    />
-                    <IntegrationCard
-                        icon='unleash'
-                        title='Unleash Proxy'
-                        description='The Unleash Proxy is a lightweight, stateless proxy that sits between your Unleash client SDKs and the Unleash API.'
-                        link='https://docs.getunleash.io/reference/unleash-proxy'
-                        configureActionText='View documentation'
-                        deprecated='Try Unleash Edge instead. It has all the features of Unleash Proxy and more.'
-                        isExternal
                     />
                 </StyledCardsGrid>
             </StyledSection>
