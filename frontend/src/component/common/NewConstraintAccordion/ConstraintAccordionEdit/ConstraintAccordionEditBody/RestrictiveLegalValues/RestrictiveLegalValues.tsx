@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
 import { Alert, Button, Checkbox, Chip, Stack, styled } from '@mui/material';
 import { ConstraintValueSearch } from 'component/common/LegacyConstraintAccordion/ConstraintValueSearch/ConstraintValueSearch';
-import { ConstraintFormHeader } from '../ConstraintFormHeader/ConstraintFormHeader';
+import { ConstraintFormHeader } from '../ConstraintFormHeader/ConstraintFormHeader.tsx';
 import type { ILegalValue } from 'interfaces/context';
 import {
     filterLegalValues,
     LegalValueLabel,
-} from '../LegalValueLabel/LegalValueLabel';
+} from '../LegalValueLabel/LegalValueLabel.tsx';
 import { useUiFlag } from 'hooks/useUiFlag';
 
 interface IRestrictiveLegalValuesProps {
@@ -47,7 +47,9 @@ export const getIllegalValues = (
 ) => {
     const deletedValuesSet = getLegalValueSet(deletedLegalValues);
 
-    return constraintValues.filter((value) => deletedValuesSet.has(value));
+    return constraintValues.filter(
+        (value) => value !== '' && deletedValuesSet.has(value),
+    );
 };
 
 const StyledValuesContainer = styled('div')(({ theme }) => ({
@@ -80,6 +82,10 @@ const ErrorText = styled('p')(({ theme }) => ({
     color: theme.palette.error.main,
 }));
 
+/**
+ * @deprecated use `/component/feature/FeatureStrategy/FeatureStrategyConstraints/LegalValuesSelector.tsx`
+ * Remove with flag `addEditStrategy`
+ */
 export const RestrictiveLegalValues = ({
     data,
     values,
@@ -152,9 +158,12 @@ export const RestrictiveLegalValues = ({
     };
 
     const handleSearchKeyDown = (event: React.KeyboardEvent) => {
-        if (event.key === 'Enter' && filteredValues.length > 0) {
-            const firstValue = filteredValues[0].value;
-            onChange(firstValue);
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (filteredValues.length > 0) {
+                const firstValue = filteredValues[0].value;
+                onChange(firstValue);
+            }
         }
     };
 
@@ -164,10 +173,10 @@ export const RestrictiveLegalValues = ({
                 condition={Boolean(illegalValues && illegalValues.length > 0)}
                 show={
                     <Alert severity='warning'>
-                        This constraint is using legal values that have been
-                        deleted as valid options. If you save changes on this
-                        constraint and then save the strategy the following
-                        values will be removed:
+                        This constraint is currently using values that were
+                        valid in the past but have since been deleted. If you
+                        save changes on this constraint and then save the
+                        strategy the following values will be removed:
                         <ul>
                             {illegalValues?.map((value) => (
                                 <li key={value}>{value}</li>

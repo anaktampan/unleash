@@ -3,14 +3,17 @@
  * Do not edit manually.
  * See `gen:api` script in package.json
  */
-import type { CreateFeatureNamingPatternSchema } from './createFeatureNamingPatternSchema';
-import type { UpdateProjectEnterpriseSettingsSchemaMode } from './updateProjectEnterpriseSettingsSchemaMode';
+import type { CreateFeatureNamingPatternSchema } from './createFeatureNamingPatternSchema.js';
+import type { ProjectLinkTemplateSchema } from './projectLinkTemplateSchema.js';
+import type { UpdateProjectEnterpriseSettingsSchemaMode } from './updateProjectEnterpriseSettingsSchemaMode.js';
 
 /**
  * Data used to update a [project](https://docs.getunleash.io/reference/projects) settings
  */
 export interface UpdateProjectEnterpriseSettingsSchema {
     featureNaming?: CreateFeatureNamingPatternSchema;
+    /** A list of link templates for the project. Templates are added to new flags as flag links automatically. */
+    linkTemplates?: ProjectLinkTemplateSchema[];
     /** A mode of the project affecting what actions are possible in this project */
     mode?: UpdateProjectEnterpriseSettingsSchemaMode;
 }

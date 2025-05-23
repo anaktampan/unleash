@@ -2,15 +2,19 @@ import {
     APPLICATION_CREATED,
     FEATURE_CREATED,
     FEATURE_DELETED,
+    type IEvent,
+} from '../../../lib/events/index.js';
+import {
     FeatureCreatedEvent,
     FeatureDeletedEvent,
-    type IEvent,
-} from '../../../lib/types/events';
+} from '../../../lib/types/index.js';
 
-import dbInit, { type ITestDb } from '../helpers/database-init';
-import getLogger from '../../fixtures/no-logger';
-import type { IEventStore } from '../../../lib/types/stores/event-store';
-import type { IAuditUser, IUnleashStores } from '../../../lib/types';
+import dbInit, { type ITestDb } from '../helpers/database-init.js';
+import getLogger from '../../fixtures/no-logger.js';
+import type { IEventStore } from '../../../lib/types/stores/event-store.js';
+import type { IAuditUser, IUnleashStores } from '../../../lib/types/index.js';
+
+import { vi } from 'vitest';
 
 let db: ITestDb;
 let stores: IUnleashStores;
@@ -38,7 +42,7 @@ afterAll(async () => {
     }
 });
 test('Should include id and createdAt when saving', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const event1 = {
         type: APPLICATION_CREATED,
         createdBy: '127.0.0.1',
@@ -58,7 +62,7 @@ test('Should include id and createdAt when saving', async () => {
     expect(seen[0].createdAt).toBeTruthy();
     expect(seen[0].data.clientIp).toBe(event1.data.clientIp);
     expect(seen[0].data.appName).toBe(event1.data.appName);
-    jest.useRealTimers();
+    vi.useRealTimers();
 });
 
 test('Should include empty tags array for new event', async () => {
@@ -91,7 +95,7 @@ test('Should include empty tags array for new event', async () => {
 });
 
 test('Should be able to store multiple events at once', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const event1 = {
         type: APPLICATION_CREATED,
         createdByUserId: TEST_USER_ID,
@@ -132,7 +136,7 @@ test('Should be able to store multiple events at once', async () => {
         expect(e.id).toBeTruthy();
         expect(e.createdAt).toBeTruthy();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
 });
 
 test('Should get all stored events', async () => {

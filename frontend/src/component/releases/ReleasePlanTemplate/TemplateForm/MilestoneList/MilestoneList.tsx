@@ -4,9 +4,7 @@ import Add from '@mui/icons-material/Add';
 import { v4 as uuidv4 } from 'uuid';
 import { useCallback } from 'react';
 import type { OnMoveItem } from 'hooks/useDragItem';
-import { MilestoneCard as LegacyMilestoneCard } from './MilestoneCard/LegacyMilestoneCard';
-import { useUiFlag } from 'hooks/useUiFlag';
-import { MilestoneCard } from './MilestoneCard/MilestoneCard';
+import { MilestoneCard } from './MilestoneCard/MilestoneCard.tsx';
 
 interface IMilestoneListProps {
     milestones: IReleasePlanMilestonePayload[];
@@ -30,10 +28,9 @@ export const MilestoneList = ({
     clearErrors,
     milestoneChanged,
 }: IMilestoneListProps) => {
-    const useNewMilestoneCard = useUiFlag('flagOverviewRedesign');
     const onMoveItem: OnMoveItem = useCallback(
         async ({ dragIndex, dropIndex, event, draggedElement }) => {
-            if (useNewMilestoneCard && event.type === 'drop') {
+            if (event.type === 'drop') {
                 return; // the user has let go, we should leave the current sort order as it is currently visually displayed
             }
 
@@ -83,12 +80,10 @@ export const MilestoneList = ({
         );
     };
 
-    const Card = useNewMilestoneCard ? MilestoneCard : LegacyMilestoneCard;
-
     return (
         <>
             {milestones.map((milestone, index) => (
-                <Card
+                <MilestoneCard
                     key={milestone.id}
                     index={index}
                     onMoveItem={onMoveItem}

@@ -1,7 +1,7 @@
 import type { IReleasePlanMilestoneStrategy } from 'interfaces/releasePlans';
 import { useEffect, useState } from 'react';
-import { Box, styled, Typography, Button } from '@mui/material';
-import { HelpIcon } from '../../../../common/HelpIcon/HelpIcon';
+import { Box, styled, Typography, Button, Alert } from '@mui/material';
+import { HelpIcon } from '../../../../common/HelpIcon/HelpIcon.tsx';
 import { StrategyVariantsUpgradeAlert } from 'component/common/StrategyVariantsUpgradeAlert/StrategyVariantsUpgradeAlert';
 import { VariantForm } from 'component/feature/FeatureView/FeatureVariants/FeatureEnvironmentVariants/EnvironmentVariantsModal/VariantForm/VariantForm';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,7 +10,7 @@ import { updateWeightEdit } from 'component/common/util';
 import { WeightType } from 'constants/variantTypes';
 import { useTheme } from '@mui/material';
 import Add from '@mui/icons-material/Add';
-import SplitPreviewSlider from 'component/feature/StrategyTypes/SplitPreviewSlider/SplitPreviewSlider';
+import { VariantsSplitPreview } from 'component/common/VariantsSplitPreview/VariantsSplitPreview';
 
 const StyledVariantForms = styled('div')({
     display: 'flex',
@@ -22,11 +22,6 @@ const StyledHelpIconBox = styled(Box)(({ theme }) => ({
     alignItems: 'center',
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(1),
-}));
-
-const StyledVariantsHeader = styled('div')(({ theme }) => ({
-    color: theme.palette.text.secondary,
-    marginTop: theme.spacing(1.5),
 }));
 
 interface IMilestoneStrategyVariantsProps {
@@ -115,10 +110,10 @@ export const MilestoneStrategyVariants = ({
 
     return (
         <>
-            <StyledVariantsHeader>
+            <Alert severity='info' icon={false}>
                 Variants enhance a feature flag by providing a version of the
                 feature to be enabled
-            </StyledVariantsHeader>
+            </Alert>
             <StyledHelpIconBox>
                 <Typography>Variants</Typography>
                 <HelpIcon
@@ -180,7 +175,7 @@ export const MilestoneStrategyVariants = ({
             <Button onClick={addVariant} variant='outlined' startIcon={<Add />}>
                 Add variant
             </Button>
-            <SplitPreviewSlider
+            <VariantsSplitPreview
                 variants={variantsEdit}
                 weightsError={variantWeightsError}
             />

@@ -1,4 +1,4 @@
-import { ConstraintFormHeader } from '../ConstraintFormHeader/ConstraintFormHeader';
+import { ConstraintFormHeader } from '../ConstraintFormHeader/ConstraintFormHeader.tsx';
 import Input from 'component/common/Input/Input';
 import { parseDateValue, parseValidDate } from 'component/common/util';
 
@@ -21,6 +21,10 @@ const StyledWrapper = styled('div')(({ theme }) => ({
     gap: theme.spacing(1),
 }));
 
+/**
+ * @deprecated use `component/feature/FeatureStrategy/FeatureStrategyConstraints/ConstraintDateInput.tsx`
+ * Remove with flag `addEditStrategy`
+ */
 export const DateSingleValue = ({
     setValue,
     value,

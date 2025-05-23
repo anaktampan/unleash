@@ -1,17 +1,15 @@
 import type React from 'react';
 import type { FC } from 'react';
 import type { INavigationMenuItem } from 'interfaces/route';
-import type { NavigationMode } from './NavigationMode';
-import { ShowAdmin } from './ShowHide';
+import type { NavigationMode } from './NavigationMode.tsx';
 import {
     ExternalFullListItem,
     FullListItem,
     MiniListItem,
     SignOutItem,
-} from './ListItems';
+} from './ListItems.tsx';
 import { Box, List, Typography } from '@mui/material';
-import { useUiFlag } from 'hooks/useUiFlag';
-import { IconRenderer } from './IconRenderer';
+import { IconRenderer } from './IconRenderer.tsx';
 import useUiConfig from 'hooks/api/getters/useUiConfig/useUiConfig';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -23,7 +21,7 @@ import useProjectOverview from 'hooks/api/getters/useProjectOverview/useProjectO
 import { useShowBadge } from 'component/layout/components/EnterprisePlanBadge/useShowBadge';
 import { EnterprisePlanBadge } from 'component/layout/components/EnterprisePlanBadge/EnterprisePlanBadge';
 import { useNewAdminMenu } from 'hooks/useNewAdminMenu';
-import { AdminMenuNavigation } from '../AdminMenu/AdminNavigationItems';
+import { AdminMenuNavigation } from '../AdminMenu/AdminNavigationItems.tsx';
 
 export const SecondaryNavigationList: FC<{
     routes: INavigationMenuItem[];
@@ -128,7 +126,6 @@ export const PrimaryNavigationList: FC<{
 }> = ({ mode, onClick, activeItem }) => {
     const DynamicListItem = mode === 'mini' ? MiniListItem : FullListItem;
     const { isOss } = useUiConfig();
-    const flagsReleaseManagementUI = useUiFlag('flagsReleaseManagementUI');
 
     return (
         <List>
@@ -151,7 +148,7 @@ export const PrimaryNavigationList: FC<{
             </DynamicListItem>
             <DynamicListItem
                 href='/search'
-                text={flagsReleaseManagementUI ? 'Flags overview' : 'Search'}
+                text='Flags overview'
                 onClick={() => onClick('/search')}
                 selected={activeItem === '/search'}
             >
@@ -237,7 +234,7 @@ export const AdminSettingsNavigation: FC<{
     activeItem,
     mode,
 }) => {
-    const { showOnlyAdminMenu, newAdminUIEnabled } = useNewAdminMenu();
+    const { showOnlyAdminMenu } = useNewAdminMenu();
     if (showOnlyAdminMenu) {
         return <AdminMenuNavigation onClick={() => onClick('/admin')} />;
     }
@@ -247,40 +244,7 @@ export const AdminSettingsNavigation: FC<{
         onClick(activeItem);
     };
 
-    if (newAdminUIEnabled) {
-        return <AdminSettingsLink mode={mode} onClick={setFullModeOnClick} />;
-    }
-
-    return (
-        <>
-            {mode === 'full' && (
-                <SecondaryNavigation
-                    expanded={expanded}
-                    onExpandChange={(expand) => {
-                        onExpandChange(expand);
-                    }}
-                    mode={mode}
-                    title='Admin'
-                >
-                    <SecondaryNavigationList
-                        routes={routes}
-                        mode={mode}
-                        onClick={onClick}
-                        activeItem={activeItem}
-                    />
-                </SecondaryNavigation>
-            )}
-
-            {mode === 'mini' && (
-                <ShowAdmin
-                    onChange={() => {
-                        onExpandChange(true);
-                        onSetFullMode();
-                    }}
-                />
-            )}
-        </>
-    );
+    return <AdminSettingsLink mode={mode} onClick={setFullModeOnClick} />;
 };
 
 export const AdminSettingsLink: FC<{

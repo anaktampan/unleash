@@ -1,11 +1,11 @@
-import { PlaygroundResultChip } from '../../../../PlaygroundResultChip/PlaygroundResultChip';
+import { PlaygroundResultChip } from '../../../../PlaygroundResultChip/PlaygroundResultChip.tsx';
 import type {
     PlaygroundStrategySchema,
     PlaygroundRequestSchema,
 } from 'openapi';
 import { objectId } from 'utils/objectId';
 import { StrategyItemContainer } from 'component/common/StrategyItemContainer/StrategyItemContainer';
-import { StrategyExecution } from './StrategyExecution/StrategyExecution';
+import { PlaygroundStrategyExecution } from './PlaygroundStrategyExecution/PlaygroundStrategyExecution.tsx';
 
 interface IFeatureStrategyItemProps {
     strategy: PlaygroundStrategySchema;
@@ -42,7 +42,10 @@ export const FeatureStrategyItem = ({
                 )
             }
         >
-            <StrategyExecution strategyResult={strategy} input={input} />
+            <PlaygroundStrategyExecution
+                strategyResult={strategy}
+                input={input}
+            />
         </StrategyItemContainer>
     );
 };

@@ -11,8 +11,11 @@ import {
     useConstraintAccordionList,
 } from 'component/common/LegacyConstraintAccordion/ConstraintAccordionList/ConstraintAccordionList';
 import { NewConstraintAccordionList } from 'component/common/NewConstraintAccordion/NewConstraintAccordionList/NewConstraintAccordionList';
+import { EditableConstraintsList } from 'component/common/NewConstraintAccordion/ConstraintsList/EditableConstraintsList';
 import { Limit } from 'component/common/Limit/Limit';
 import useUiConfig from 'hooks/api/getters/useUiConfig/useUiConfig';
+import { useUiFlag } from 'hooks/useUiFlag';
+import { RecentlyUsedConstraints } from '../RecentlyUsedConstraints/RecentlyUsedConstraints.tsx';
 
 interface IConstraintAccordionListProps {
     constraints: IConstraint[];
@@ -55,6 +58,7 @@ export const FeatureStrategyConstraintAccordionList = forwardRef<
         ref as RefObject<IConstraintAccordionListRef>,
     );
     const { limit, limitReached } = useConstraintLimit(constraints.length);
+    const addEditStrategy = useUiFlag('addEditStrategy');
 
     if (context.length === 0) {
         return null;
@@ -89,13 +93,22 @@ export const FeatureStrategyConstraintAccordionList = forwardRef<
                                 }
                             />
                         </StyledHelpIconBox>
-                        <NewConstraintAccordionList
-                            ref={ref}
-                            setConstraints={setConstraints}
-                            constraints={constraints}
-                            state={state}
-                        />
-
+                        {addEditStrategy ? (
+                            setConstraints ? (
+                                <EditableConstraintsList
+                                    ref={ref}
+                                    setConstraints={setConstraints}
+                                    constraints={constraints}
+                                />
+                            ) : null
+                        ) : (
+                            <NewConstraintAccordionList
+                                ref={ref}
+                                setConstraints={setConstraints}
+                                constraints={constraints}
+                                state={state}
+                            />
+                        )}
                         <Box
                             sx={(theme) => ({
                                 marginTop: theme.spacing(2),
@@ -121,6 +134,15 @@ export const FeatureStrategyConstraintAccordionList = forwardRef<
                         >
                             Add constraint
                         </Button>
+                        <ConditionallyRender
+                            condition={Boolean(addEditStrategy)}
+                            show={
+                                <RecentlyUsedConstraints
+                                    setConstraints={setConstraints}
+                                    constraints={constraints}
+                                />
+                            }
+                        />
                     </div>
                 }
             />

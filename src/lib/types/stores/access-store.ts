@@ -1,7 +1,11 @@
-import type { PermissionRef } from '../../services/access-service';
-import type { IGroupModelWithAddedAt } from '../group';
-import type { IPermission, IUserAccessOverview, IUserWithRole } from '../model';
-import type { Store } from './store';
+import type { PermissionRef } from '../../services/access-service.js';
+import type { IGroupModelWithAddedAt } from '../group.js';
+import type {
+    IPermission,
+    IUserAccessOverview,
+    IUserWithRole,
+} from '../model.js';
+import type { Store } from './store.js';
 
 export interface IUserPermission {
     project?: string;
@@ -37,15 +41,6 @@ export interface IRoleDescriptor {
     name: string;
     description?: string;
     type: string;
-}
-
-export interface IProjectAccessModel {
-    users: IAccessInfo[];
-    groups: IAccessInfo[];
-}
-
-export interface IAccessInfo {
-    id: number;
 }
 
 export interface IUserRole {
@@ -113,14 +108,6 @@ export interface IAccessStore extends Store<IRole, number> {
         userId: number,
         roleId: number,
         projectId?: string,
-    ): Promise<void>;
-
-    addRoleAccessToProject(
-        users: IAccessInfo[],
-        groups: IAccessInfo[],
-        projectId: string,
-        roleId: number,
-        createdBy: string,
     ): Promise<void>;
 
     addAccessToProject(

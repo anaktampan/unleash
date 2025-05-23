@@ -90,6 +90,10 @@ export default async function createConfigAsync(): Promise<Config> {
                 apiKey: 'dc9c4491fcf9143ee34015f22d1dd9d6',
                 indexName: 'getunleash',
             },
+            metadata: [
+                { name: 'og:image:width', content: '1200' },
+                { name: 'og:image:height', content: '630' },
+            ],
             navbar: {
                 logo: {
                     alt: 'Unleash logo',
@@ -159,7 +163,7 @@ class="header-github-link"
                     {
                         type: 'html',
                         position: 'right',
-                        value: '<a href="https://www.getunleash.io/plans/enterprise" target="_blank" rel="noopener noreferrer" class="navbar__link navbar-link-solid">Get a demo</a>',
+                        value: '<a href="https://www.getunleash.io/pricing" target="_blank" rel="noopener noreferrer" class="navbar__link navbar-link-solid">Start free trial</a>',
                         className: 'hide-at-small-sizes',
                     },
                 ],
@@ -349,6 +353,10 @@ class="header-github-link"
                                 href: 'https://www.getunleash.io/pricing',
                             },
                             {
+                                label: 'Product vision',
+                                href: 'https://www.getunleash.io/product-vision',
+                            },
+                            {
                                 label: 'Open live demo',
                                 href: 'https://app.unleash-hosted.com/demo/login',
                             },
@@ -378,10 +386,6 @@ class="header-github-link"
                                 href: 'https://unleash.instatus.com',
                             },
                             {
-                                label: 'Roadmap',
-                                href: 'https://github.com/orgs/Unleash/projects/10/views/1',
-                            },
-                            {
                                 label: 'Changelog',
                                 href: 'https://github.com/Unleash/unleash/releases',
                             },
@@ -395,7 +399,7 @@ class="header-github-link"
                     alt: 'Unleash logo',
                 },
             },
-            image: 'img/logo.png',
+            image: 'img/unleash-preview-1200-630.png',
             imageZoom: {
                 // Optional medium-zoom options at
                 // https://www.npmjs.com/package/medium-zoom#options
@@ -863,66 +867,6 @@ class="header-github-link"
                         {
                             from: '/how-to/how-to-troubleshoot-feature-not-available',
                             to: '/using-unleash/troubleshooting/feature-not-available',
-                        },
-                        {
-                            from: ['/reference/deploy', '/deploy'],
-                            to: '/using-unleash/deploy',
-                        },
-                        {
-                            from: [
-                                '/reference/deploy/getting-started',
-                                '/deploy/getting_started',
-                            ],
-                            to: '/using-unleash/deploy/getting-started',
-                        },
-                        {
-                            from: [
-                                '/reference/deploy/configuring-unleash',
-                                '/deploy/configuring_unleash',
-                            ],
-                            to: '/using-unleash/deploy/configuring-unleash',
-                        },
-                        {
-                            from: [
-                                '/reference/deploy/database-setup',
-                                '/deploy/database-setup',
-                            ],
-                            to: '/using-unleash/deploy/database-setup',
-                        },
-                        {
-                            from: [
-                                '/reference/deploy/database-backup',
-                                '/deploy/database-backup',
-                            ],
-                            to: '/using-unleash/deploy/database-backup',
-                        },
-                        {
-                            from: [
-                                '/reference/deploy/email-service',
-                                '/deploy/email',
-                            ],
-                            to: '/using-unleash/deploy/email-service',
-                        },
-                        {
-                            from: [
-                                '/reference/deploy/google-auth-hook',
-                                '/deploy/google_auth',
-                            ],
-                            to: '/using-unleash/deploy/google-auth-hook',
-                        },
-                        {
-                            from: [
-                                '/deploy/migration_guide',
-                                '/reference/deploy/migration-guide',
-                            ],
-                            to: '/using-unleash/deploy/upgrading-unleash',
-                        },
-                        {
-                            from: [
-                                '/reference/deploy/securing-unleash',
-                                '/deploy/securing_unleash',
-                            ],
-                            to: '/using-unleash/deploy/securing-unleash',
                         },
                         {
                             from: [

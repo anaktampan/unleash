@@ -7,12 +7,11 @@ import useUiConfig from 'hooks/api/getters/useUiConfig/useUiConfig';
 import useToast from 'hooks/useToast';
 import { useNavigate } from 'react-router-dom';
 import { ADMIN } from 'component/providers/AccessProvider/permissions';
-import EnvironmentForm from '../EnvironmentForm/EnvironmentForm';
-import useEnvironmentForm from '../hooks/useEnvironmentForm';
+import EnvironmentForm from '../EnvironmentForm/EnvironmentForm.tsx';
+import useEnvironmentForm from '../hooks/useEnvironmentForm.ts';
 import { formatUnknownError } from 'utils/formatUnknownError';
 import { useRequiredPathParam } from 'hooks/useRequiredPathParam';
 import { GO_BACK } from 'constants/navigate';
-import { useUiFlag } from 'hooks/useUiFlag';
 
 const EditEnvironment = () => {
     const { uiConfig } = useUiConfig();
@@ -37,15 +36,12 @@ const EditEnvironment = () => {
         environment.requiredApprovals,
     );
     const { refetch } = usePermissions();
-    const globalChangeRequestConfigEnabled = useUiFlag(
-        'globalChangeRequestConfig',
-    );
 
     const editPayload = () => {
         return {
             type,
             sortOrder: environment.sortOrder,
-            ...(globalChangeRequestConfigEnabled ? { requiredApprovals } : {}),
+            requiredApprovals,
         };
     };
 

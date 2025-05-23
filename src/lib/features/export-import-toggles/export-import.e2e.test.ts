@@ -1,15 +1,18 @@
 import {
     type IUnleashTest,
     setupAppWithCustomConfig,
-} from '../../../test/e2e/helpers/test-helper';
-import dbInit, { type ITestDb } from '../../../test/e2e/helpers/database-init';
-import getLogger from '../../../test/fixtures/no-logger';
+} from '../../../test/e2e/helpers/test-helper.js';
+import dbInit, {
+    type ITestDb,
+} from '../../../test/e2e/helpers/database-init.js';
+import getLogger from '../../../test/fixtures/no-logger.js';
 import {
     DEFAULT_PROJECT,
     type FeatureToggleDTO,
     type IContextFieldStore,
     type IEnvironmentStore,
     type IEventStore,
+    type IFeatureLinkStore,
     type IFeatureToggleStore,
     type IProjectStore,
     type ISegment,
@@ -17,15 +20,15 @@ import {
     type ITagStore,
     type IVariant,
     TEST_AUDIT_USER,
-} from '../../types';
-import { DEFAULT_ENV } from '../../util';
+} from '../../types/index.js';
+import { DEFAULT_ENV } from '../../util/index.js';
 import type {
     ContextFieldSchema,
     ImportTogglesSchema,
     UpsertSegmentSchema,
     VariantsSchema,
-} from '../../openapi';
-import type { IContextFieldDto } from '../context/context-field-store-type';
+} from '../../openapi/index.js';
+import type { IContextFieldDto } from '../context/context-field-store-type.js';
 
 let app: IUnleashTest;
 let db: ITestDb;
@@ -35,6 +38,7 @@ let contextFieldStore: IContextFieldStore;
 let projectStore: IProjectStore;
 let toggleStore: IFeatureToggleStore;
 let tagStore: ITagStore;
+let featureLinkStore: IFeatureLinkStore;
 
 const defaultStrategy: IStrategyConfig = {
     name: 'default',
@@ -112,6 +116,17 @@ const createVariants = async (feature: string, variants: IVariant[]) => {
     );
 };
 
+const addLink = async (
+    feature: string,
+    link: { url: string; title: string },
+) => {
+    await app.services.transactionalFeatureLinkService.createLink(
+        DEFAULT_ENV,
+        { ...link, featureName: feature },
+        TEST_AUDIT_USER,
+    );
+};
+
 const createProjects = async (
     projects: string[] = [DEFAULT_PROJECT],
     featureLimit = 2,
@@ -155,7 +170,9 @@ beforeAll(async () => {
         db.stores,
         {
             experimental: {
-                flags: {},
+                flags: {
+                    featureLinks: true,
+                },
             },
         },
         db.rawDatabase,
@@ -166,6 +183,7 @@ beforeAll(async () => {
     contextFieldStore = db.stores.contextFieldStore;
     toggleStore = db.stores.featureToggleStore;
     tagStore = db.stores.tagStore;
+    featureLinkStore = db.stores.featureLinkStore;
 });
 
 beforeEach(async () => {
@@ -174,6 +192,7 @@ beforeEach(async () => {
     await projectStore.deleteAll();
     await environmentStore.deleteAll();
     await tagStore.deleteAll();
+    await featureLinkStore.deleteAll();
 
     await contextFieldStore.deleteAll();
     await app.createContextField({ name: 'appName' });
@@ -290,6 +309,15 @@ test('exports features', async () => {
     );
 
     await app.addDependency(defaultFeatureName, 'second_feature');
+    await addLink(defaultFeatureName, {
+        url: 'http://example1.com',
+        title: 'link title 1',
+    });
+    await addLink(defaultFeatureName, {
+        url: 'http://example2.com',
+        title: 'link title 2',
+    });
+
     const { body } = await app.request
         .post('/api/admin/features-batch/export')
         .send({
@@ -328,6 +356,15 @@ test('exports features', async () => {
                         feature: 'second_feature',
                         enabled: true,
                     },
+                ],
+            },
+        ],
+        links: [
+            {
+                feature: defaultFeatureName,
+                links: [
+                    { url: 'http://example1.com', title: 'link title 1' },
+                    { url: 'http://example2.com', title: 'link title 2' },
                 ],
             },
         ],
@@ -804,6 +841,15 @@ test('import features to existing project and environment', async () => {
                     ],
                 },
             ],
+            links: [
+                {
+                    feature: exportedFeature.name,
+                    links: [
+                        { url: 'http://example1.com', title: 'link title 1' },
+                        { url: 'http://example2.com' },
+                    ],
+                },
+            ],
         },
     });
 
@@ -825,6 +871,10 @@ test('import features to existing project and environment', async () => {
             {
                 feature: anotherExportedFeature.name,
             },
+        ],
+        links: [
+            { title: 'link title 1', url: 'http://example1.com' },
+            { title: null, url: 'http://example2.com' },
         ],
     });
 

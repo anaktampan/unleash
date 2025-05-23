@@ -1,16 +1,17 @@
 import { subDays } from 'date-fns';
-import { ValidationError } from 'joi';
+import joi from 'joi';
+const { ValidationError } = joi;
 import createSlug from 'slug';
-import type { IAuditUser, IUser } from '../../types/user';
+import type { IAuditUser, IUser } from '../../types/user.js';
 import type {
     AccessService,
     AccessWithRoles,
-} from '../../services/access-service';
-import NameExistsError from '../../error/name-exists-error';
-import InvalidOperationError from '../../error/invalid-operation-error';
-import { nameType } from '../../routes/util';
-import { projectSchema } from '../../services/project-schema';
-import NotFoundError from '../../error/notfound-error';
+} from '../../services/access-service.js';
+import NameExistsError from '../../error/name-exists-error.js';
+import InvalidOperationError from '../../error/invalid-operation-error.js';
+import { nameType } from '../../routes/util.js';
+import { projectSchema } from '../../services/project-schema.js';
+import NotFoundError from '../../error/notfound-error.js';
 import {
     ADMIN,
     ADMIN_TOKEN_USER,
@@ -54,44 +55,43 @@ import {
     SYSTEM_USER_ID,
     type IProjectReadModel,
     type IOnboardingReadModel,
-} from '../../types';
+} from '../../types/index.js';
 import type {
-    IProjectAccessModel,
     IRoleDescriptor,
     IRoleWithProject,
-} from '../../types/stores/access-store';
-import type FeatureToggleService from '../feature-toggle/feature-toggle-service';
-import IncompatibleProjectError from '../../error/incompatible-project-error';
-import { arraysHaveSameItems } from '../../util';
-import type { GroupService } from '../../services/group-service';
-import type { IGroupRole } from '../../types/group';
-import type { FavoritesService } from '../../services/favorites-service';
-import { calculateAverageTimeToProd } from '../feature-toggle/time-to-production/time-to-production';
-import type { IProjectStatsStore } from '../../types/stores/project-stats-store-type';
-import { uniqueByKey } from '../../util/unique';
-import { BadDataError, PermissionError } from '../../error';
+} from '../../types/stores/access-store.js';
+import type { FeatureToggleService } from '../feature-toggle/feature-toggle-service.js';
+import IncompatibleProjectError from '../../error/incompatible-project-error.js';
+import { arraysHaveSameItems } from '../../util/index.js';
+import type { GroupService } from '../../services/group-service.js';
+import type { IGroupRole } from '../../types/group.js';
+import type { FavoritesService } from '../../services/favorites-service.js';
+import { calculateAverageTimeToProd } from '../feature-toggle/time-to-production/time-to-production.js';
+import type { IProjectStatsStore } from '../../types/stores/project-stats-store-type.js';
+import { uniqueByKey } from '../../util/unique.js';
+import { BadDataError, PermissionError } from '../../error/index.js';
 import type {
     ProjectDoraMetricsSchema,
     ResourceLimitsSchema,
-} from '../../openapi';
-import { checkFeatureNamingData } from '../feature-naming-pattern/feature-naming-validation';
-import type { IPrivateProjectChecker } from '../private-project/privateProjectCheckerType';
-import type EventService from '../events/event-service';
+} from '../../openapi/index.js';
+import { checkFeatureNamingData } from '../feature-naming-pattern/feature-naming-validation.js';
+import type { IPrivateProjectChecker } from '../private-project/privateProjectCheckerType.js';
+import type EventService from '../events/event-service.js';
 import type {
     IProjectApplicationsSearchParams,
     IProjectEnterpriseSettingsUpdate,
     IProjectQuery,
     IProjectsQuery,
-} from './project-store-type';
-import type { IProjectFlagCreatorsReadModel } from './project-flag-creators-read-model.type';
-import { throwExceedsLimitError } from '../../error/exceeds-limit-error';
+} from './project-store-type.js';
+import type { IProjectFlagCreatorsReadModel } from './project-flag-creators-read-model.type.js';
+import { throwExceedsLimitError } from '../../error/exceeds-limit-error.js';
 import type EventEmitter from 'events';
-import type { ApiTokenService } from '../../services/api-token-service';
-import type { ProjectForUi } from './project-read-model-type';
-import { canGrantProjectRole } from './can-grant-project-role';
-import { batchExecute } from '../../util/batchExecute';
-import metricsHelper from '../../util/metrics-helper';
-import { FUNCTION_TIME } from '../../metric-events';
+import type { ApiTokenService } from '../../services/index.js';
+import type { ProjectForUi } from './project-read-model-type.js';
+import { canGrantProjectRole } from './can-grant-project-role.js';
+import { batchExecute } from '../../util/index.js';
+import metricsHelper from '../../util/metrics-helper.js';
+import { FUNCTION_TIME } from '../../metric-events.js';
 
 type Days = number;
 type Count = number;
@@ -429,25 +429,14 @@ export default class ProjectService {
                 await this.validateEnvironmentsExist(
                     newProject.changeRequestEnvironments.map((env) => env.name),
                 );
-                const globalChangeRequestConfigEnabled =
-                    this.flagResolver.isEnabled('globalChangeRequestConfig');
-                if (globalChangeRequestConfigEnabled) {
-                    const allChangeRequestEnvironments =
-                        await this.getAllChangeRequestEnvironments(newProject);
-                    const changeRequestEnvironments =
-                        await enableChangeRequestsForSpecifiedEnvironments(
-                            allChangeRequestEnvironments,
-                        );
+                const allChangeRequestEnvironments =
+                    await this.getAllChangeRequestEnvironments(newProject);
+                const changeRequestEnvironments =
+                    await enableChangeRequestsForSpecifiedEnvironments(
+                        allChangeRequestEnvironments,
+                    );
 
-                    data.changeRequestEnvironments = changeRequestEnvironments;
-                } else {
-                    const changeRequestEnvironments =
-                        await enableChangeRequestsForSpecifiedEnvironments(
-                            newProject.changeRequestEnvironments,
-                        );
-
-                    data.changeRequestEnvironments = changeRequestEnvironments;
-                }
+                data.changeRequestEnvironments = changeRequestEnvironments;
             } else {
                 data.changeRequestEnvironments = [];
             }
@@ -849,35 +838,6 @@ export default class ProjectService {
                     groupId: group.id,
                     projectId: project.id,
                     roleName: role.name,
-                },
-            }),
-        );
-    }
-
-    async addRoleAccess(
-        projectId: string,
-        roleId: number,
-        usersAndGroups: IProjectAccessModel,
-        auditUser: IAuditUser,
-    ): Promise<void> {
-        await this.accessService.addRoleAccessToProject(
-            usersAndGroups.users,
-            usersAndGroups.groups,
-            projectId,
-            roleId,
-            auditUser,
-        );
-
-        await this.eventService.storeEvent(
-            new ProjectAccessAddedEvent({
-                project: projectId,
-                auditUser,
-                data: {
-                    roles: {
-                        roleId,
-                        groupIds: usersAndGroups.groups.map(({ id }) => id),
-                        userIds: usersAndGroups.users.map(({ id }) => id),
-                    },
                 },
             }),
         );
@@ -1491,6 +1451,7 @@ export default class ProjectService {
             mode: project.mode,
             featureLimit: project.featureLimit,
             featureNaming: project.featureNaming,
+            linkTemplates: project.linkTemplates,
             defaultStickiness: project.defaultStickiness,
             health: project.health || 0,
             favorite: favorite,

@@ -1,23 +1,27 @@
 import {
     type IUnleashTest,
     setupAppWithAuth,
-} from '../../../test/e2e/helpers/test-helper';
-import dbInit, { type ITestDb } from '../../../test/e2e/helpers/database-init';
-import getLogger from '../../../test/fixtures/no-logger';
-import { randomId } from '../../util';
+} from '../../../test/e2e/helpers/test-helper.js';
+import dbInit, {
+    type ITestDb,
+} from '../../../test/e2e/helpers/database-init.js';
+import getLogger from '../../../test/fixtures/no-logger.js';
+import { randomId } from '../../util/index.js';
 import {
     ApiTokenType,
     type IApiToken,
     type IApiTokenCreate,
-} from '../../types/models/api-token';
+} from '../../types/model.js';
 import { startOfHour } from 'date-fns';
 import {
     type IConstraint,
     type IStrategyConfig,
     SYSTEM_USER_AUDIT,
     TEST_AUDIT_USER,
-} from '../../types';
-import type { FrontendApiService } from './frontend-api-service';
+} from '../../types/index.js';
+import type { FrontendApiService } from './frontend-api-service.js';
+
+import { vi } from 'vitest';
 
 let app: IUnleashTest;
 let db: ITestDb;
@@ -38,7 +42,7 @@ beforeAll(async () => {
 
 afterEach(() => {
     app.services.frontendApiService.stopAll();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 });
 
 afterAll(async () => {
@@ -356,6 +360,12 @@ test('should store frontend api client metrics', async () => {
         projects: ['*'],
         environment: '*',
     });
+
+    // @ts-expect-error - cachedFeatureNames is a private property in ClientMetricsServiceV2
+    app.services.clientMetricsServiceV2.cachedFeatureNames = vi
+        .fn<() => Promise<string[]>>()
+        .mockResolvedValue([featureName]);
+
     await app.request
         .get(`/api/admin/client-metrics/features/${featureName}`)
         .set('Authorization', adminToken.secret)
