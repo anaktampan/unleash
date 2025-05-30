@@ -1,31 +1,35 @@
-import type { Logger } from '../../../logger';
-import {
-    CLIENT_METRICS_ADDED,
-    type IFlagResolver,
-    type IUnleashConfig,
-} from '../../../types';
-import type { ISdkHeartbeat, IUnleashStores } from '../../../types';
-import type { ToggleMetricsSummary } from '../../../types/models/metrics';
+import type { Logger } from '../../../logger.js';
+import type { IFlagResolver, IUnleashConfig } from '../../../types/index.js';
+import type { ISdkHeartbeat, IUnleashStores } from '../../../types/index.js';
+import type { ToggleMetricsSummary } from '../../../types/models/metrics.js';
 import type {
     IClientMetricsEnv,
     IClientMetricsStoreV2,
-} from './client-metrics-store-v2-type';
-import { clientMetricsSchema } from '../shared/schema';
+} from './client-metrics-store-v2-type.js';
+import { clientMetricsSchema } from '../shared/schema.js';
 import { compareAsc, secondsToMilliseconds } from 'date-fns';
-import { CLIENT_METRICS, CLIENT_REGISTER } from '../../../types/events';
-import ApiUser, { type IApiUser } from '../../../types/api-user';
-import { ALL } from '../../../types/models/api-token';
-import type { IUser } from '../../../types/user';
-import { collapseHourlyMetrics } from './collapseHourlyMetrics';
-import type { LastSeenService } from '../last-seen/last-seen-service';
+import {
+    CLIENT_METRICS,
+    CLIENT_METRICS_ADDED,
+    CLIENT_REGISTER,
+} from '../../../events/index.js';
+import ApiUser, { type IApiUser } from '../../../types/api-user.js';
+import { ALL } from '../../../types/models/api-token.js';
+import type { IUser } from '../../../types/user.js';
+import { collapseHourlyMetrics } from './collapseHourlyMetrics.js';
+import type { LastSeenService } from '../last-seen/last-seen-service.js';
 import {
     generateDayBuckets,
     generateHourBuckets,
     type HourBucket,
-} from '../../../util/time-utils';
-import type { ClientMetricsSchema } from '../../../../lib/openapi';
-import { nameSchema } from '../../../schema/feature-schema';
+} from '../../../util/time-utils.js';
+import type { ClientMetricsSchema } from '../../../../lib/openapi/index.js';
+import { nameSchema } from '../../../schema/feature-schema.js';
 import memoizee from 'memoizee';
+import {
+    MAX_UNKNOWN_FLAGS,
+    type UnknownFlagsService,
+} from '../unknown-flags/unknown-flags-service.js';
 
 export default class ClientMetricsServiceV2 {
     private config: IUnleashConfig;
@@ -35,6 +39,8 @@ export default class ClientMetricsServiceV2 {
     private clientMetricsStoreV2: IClientMetricsStoreV2;
 
     private lastSeenService: LastSeenService;
+
+    private unknownFlagsService: UnknownFlagsService;
 
     private flagResolver: Pick<IFlagResolver, 'isEnabled' | 'getVariant'>;
 
@@ -46,9 +52,11 @@ export default class ClientMetricsServiceV2 {
         { clientMetricsStoreV2 }: Pick<IUnleashStores, 'clientMetricsStoreV2'>,
         config: IUnleashConfig,
         lastSeenService: LastSeenService,
+        unknownFlagsService: UnknownFlagsService,
     ) {
         this.clientMetricsStoreV2 = clientMetricsStoreV2;
         this.lastSeenService = lastSeenService;
+        this.unknownFlagsService = unknownFlagsService;
         this.config = config;
         this.logger = config.getLogger(
             '/services/client-metrics/client-metrics-service-v2.ts',
@@ -113,25 +121,36 @@ export default class ClientMetricsServiceV2 {
         }
     }
 
-    async filterExistingToggleNames(toggleNames: string[]): Promise<string[]> {
-        if (this.flagResolver.isEnabled('filterExistingFlagNames')) {
-            try {
-                const validNames = await this.cachedFeatureNames();
+    async filterExistingToggleNames(toggleNames: string[]): Promise<{
+        validatedToggleNames: string[];
+        unknownToggleNames: string[];
+    }> {
+        let unknownToggleNames: string[] = [];
 
-                const existingNames = toggleNames.filter((name) =>
-                    validNames.includes(name),
+        const existingFlags = await this.cachedFeatureNames();
+        const existingNames = toggleNames.filter((name) =>
+            existingFlags.includes(name),
+        );
+
+        if (this.flagResolver.isEnabled('reportUnknownFlags')) {
+            try {
+                const nonExistingNames = toggleNames.filter(
+                    (name) => !existingFlags.includes(name),
                 );
-                if (existingNames.length !== toggleNames.length) {
-                    this.logger.info(
-                        `Filtered out ${toggleNames.length - existingNames.length} toggles with non-existing names`,
-                    );
-                }
-                return this.filterValidToggleNames(existingNames);
+
+                unknownToggleNames = nonExistingNames.slice(
+                    0,
+                    MAX_UNKNOWN_FLAGS,
+                );
             } catch (e) {
                 this.logger.error(e);
             }
         }
-        return this.filterValidToggleNames(toggleNames);
+
+        const validatedToggleNames =
+            await this.filterValidToggleNames(existingNames);
+
+        return { validatedToggleNames, unknownToggleNames };
     }
 
     async filterValidToggleNames(toggleNames: string[]): Promise<string[]> {
@@ -181,11 +200,13 @@ export default class ClientMetricsServiceV2 {
                 ),
         );
 
-        const validatedToggleNames =
+        const { validatedToggleNames, unknownToggleNames } =
             await this.filterExistingToggleNames(toggleNames);
 
-        this.logger.debug(
-            `Got ${toggleNames.length} (${validatedToggleNames.length} valid) metrics from ${clientIp}`,
+        const invalidToggleNames =
+            toggleNames.length - validatedToggleNames.length;
+        this.logger.info(
+            `Got ${toggleNames.length} (${invalidToggleNames > 0 ? `${invalidToggleNames} invalid ones` : 'all valid'}) metrics from ${value.appName}`,
         );
 
         if (data.sdkVersion) {
@@ -202,6 +223,21 @@ export default class ClientMetricsServiceV2 {
             };
 
             this.config.eventBus.emit(CLIENT_REGISTER, heartbeatEvent);
+        }
+
+        if (unknownToggleNames.length > 0) {
+            const unknownFlags = unknownToggleNames.map((name) => ({
+                name,
+                appName: value.appName,
+                seenAt: value.bucket.stop,
+            }));
+            this.logger.info(
+                `Registering ${unknownFlags.length} unknown flags from ${value.appName}, i.e.: ${unknownFlags
+                    .slice(0, 10)
+                    .map((f) => f.name)
+                    .join(', ')}`,
+            );
+            this.unknownFlagsService.register(unknownFlags);
         }
 
         if (validatedToggleNames.length > 0) {

@@ -2,7 +2,7 @@ import { collectDefaultMetrics } from 'prom-client';
 import memoizee from 'memoizee';
 import type EventEmitter from 'events';
 import type { Knex } from 'knex';
-import * as events from './metric-events';
+import * as events from './metric-events.js';
 import {
     DB_POOL_UPDATE,
     FEATURE_ARCHIVED,
@@ -23,21 +23,21 @@ import {
     PROJECT_ARCHIVED,
     PROJECT_REVIVED,
     PROJECT_DELETED,
-} from './types/events';
-import type { IUnleashConfig } from './types/option';
-import type { IUnleashStores } from './types/stores';
+} from './events/index.js';
+import type { IUnleashConfig } from './types/option.js';
+import type { IUnleashStores } from './types/stores.js';
 import { hoursToMilliseconds, minutesToMilliseconds } from 'date-fns';
-import type { InstanceStatsService } from './features/instance-stats/instance-stats-service';
-import type { IEnvironment, ISdkHeartbeat } from './types';
+import type { InstanceStatsService } from './features/instance-stats/instance-stats-service.js';
+import type { IEnvironment, ISdkHeartbeat } from './types/index.js';
 import {
     createCounter,
     createGauge,
     createSummary,
     createHistogram,
-} from './util/metrics';
-import type { SchedulerService } from './services';
-import type { IClientMetricsEnv } from './features/metrics/client-metrics/client-metrics-store-v2-type';
-import { DbMetricsMonitor } from './metrics-gauge';
+} from './util/metrics/index.js';
+import type { SchedulerService } from './services/index.js';
+import type { IClientMetricsEnv } from './features/metrics/client-metrics/client-metrics-store-v2-type.js';
+import { DbMetricsMonitor } from './metrics-gauge.js';
 
 export function registerPrometheusPostgresMetrics(
     db: Knex,
@@ -656,6 +656,25 @@ export function registerPrometheusMetrics(
             })),
     });
 
+    dbMetrics.registerGaugeDbMetric({
+        name: 'feature_link_by_domain',
+        help: 'Count most popular domains used in feature links',
+        labelNames: ['domain'],
+        query: () => {
+            if (flagResolver.isEnabled('featureLinks')) {
+                return stores.featureLinkReadModel.getTopDomains();
+            }
+            return Promise.resolve([]);
+        },
+        map: (result) =>
+            result.map(({ domain, count }) => ({
+                value: count,
+                labels: {
+                    domain,
+                },
+            })),
+    });
+
     const featureLifecycleStageEnteredCounter = createCounter({
         name: 'feature_lifecycle_stage_entered',
         help: 'Count how many features entered a given stage',
@@ -734,6 +753,11 @@ export function registerPrometheusMetrics(
         name: 'addon_events_handled',
         help: 'Events handled by addons and the result.',
         labelNames: ['result', 'destination'],
+    });
+
+    const unknownFlagsGauge = createGauge({
+        name: 'unknown_flags',
+        help: 'Number of unknown flags reported in the last 24 hours, if any. Maximum of 10.',
     });
 
     // register event listeners
@@ -1136,6 +1160,10 @@ export function registerPrometheusMetrics(
                 productionChanges60.set(productionChanges.last60);
                 productionChanges90.reset();
                 productionChanges90.set(productionChanges.last90);
+
+                const unknownFlags = await stores.unknownFlagsStore.count();
+                unknownFlagsGauge.reset();
+                unknownFlagsGauge.set(unknownFlags);
             } catch (e) {}
         },
     };

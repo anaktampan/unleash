@@ -1,18 +1,21 @@
-import dbInit, { type ITestDb } from '../../../test/e2e/helpers/database-init';
+import dbInit, {
+    type ITestDb,
+} from '../../../test/e2e/helpers/database-init.js';
 import {
     insertLastSeenAt,
     type IUnleashTest,
     setupAppWithAuth,
-} from '../../../test/e2e/helpers/test-helper';
-import getLogger from '../../../test/fixtures/no-logger';
-import type { FeatureSearchQueryParameters } from '../../openapi/spec/feature-search-query-parameters';
+} from '../../../test/e2e/helpers/test-helper.js';
+import getLogger from '../../../test/fixtures/no-logger.js';
+import type { FeatureSearchQueryParameters } from '../../openapi/spec/feature-search-query-parameters.js';
 import {
     CREATE_FEATURE_STRATEGY,
     DEFAULT_PROJECT,
     type IUnleashStores,
+    TEST_AUDIT_USER,
     UPDATE_FEATURE_ENVIRONMENT,
-} from '../../types';
-import { DEFAULT_ENV } from '../../util';
+} from '../../types/index.js';
+import { DEFAULT_ENV } from '../../util/index.js';
 
 let app: IUnleashTest;
 let db: ITestDb;
@@ -29,7 +32,6 @@ beforeAll(async () => {
                 flags: {
                     strictSchemaValidation: true,
                     anonymiseEventLog: true,
-                    flagsOverviewSearch: true,
                 },
             },
         },
@@ -74,6 +76,22 @@ beforeAll(async () => {
             { name: CREATE_FEATURE_STRATEGY },
         ],
         'production',
+    );
+
+    await app.services.userService.createUser(
+        {
+            username: 'admin@test.com',
+            rootRole: 1,
+        },
+        TEST_AUDIT_USER,
+    );
+
+    await app.services.userService.createUser(
+        {
+            username: 'admin2@test.com',
+            rootRole: 1,
+        },
+        TEST_AUDIT_USER,
     );
 });
 
@@ -223,7 +241,9 @@ const searchFeaturesWithoutQueryParams = async (expectedCode = 200) => {
 };
 const getProjectArchive = async (projectId = 'default', expectedCode = 200) => {
     return app.request
-        .get(`/api/admin/archive/features/${projectId}`)
+        .get(
+            `/api/admin/search/features?project=IS%3A${projectId}&archived=IS%3Atrue`,
+        )
         .expect(expectedCode);
 };
 
@@ -1336,15 +1356,26 @@ const createChangeRequest = async ({
     feature,
     environment,
     state,
-}: { id: number; feature: string; environment: string; state: string }) => {
-    await db
-        .rawDatabase('change_requests')
-        .insert({ id, environment, state, project: 'default', created_by: 1 });
+    createdBy,
+}: {
+    id: number;
+    feature: string;
+    environment: string;
+    state: string;
+    createdBy: number;
+}) => {
+    await db.rawDatabase('change_requests').insert({
+        id,
+        environment,
+        state,
+        project: 'default',
+        created_by: createdBy,
+    });
     await db.rawDatabase('change_request_events').insert({
         id,
         feature,
         action: 'updateEnabled',
-        created_by: 1,
+        created_by: createdBy,
         change_request_id: id,
     });
 };
@@ -1358,48 +1389,56 @@ test('should return change request ids per environment', async () => {
         feature: 'my_feature_a',
         environment: 'production',
         state: 'In review',
+        createdBy: 1,
     });
     await createChangeRequest({
         id: 2,
         feature: 'my_feature_a',
         environment: 'production',
         state: 'Applied',
+        createdBy: 1,
     });
     await createChangeRequest({
         id: 3,
         feature: 'my_feature_a',
         environment: 'production',
         state: 'Cancelled',
+        createdBy: 1,
     });
     await createChangeRequest({
         id: 4,
         feature: 'my_feature_a',
         environment: 'production',
         state: 'Rejected',
+        createdBy: 1,
     });
     await createChangeRequest({
         id: 5,
         feature: 'my_feature_a',
         environment: 'development',
         state: 'Draft',
+        createdBy: 1,
     });
     await createChangeRequest({
         id: 6,
         feature: 'my_feature_a',
         environment: 'development',
         state: 'Scheduled',
+        createdBy: 1,
     });
     await createChangeRequest({
         id: 7,
         feature: 'my_feature_a',
         environment: 'development',
         state: 'Approved',
+        createdBy: 2,
     });
     await createChangeRequest({
         id: 8,
         feature: 'my_feature_b',
         environment: 'development',
         state: 'Approved',
+        createdBy: 3,
     });
 
     const { body } = await searchFeatures({});

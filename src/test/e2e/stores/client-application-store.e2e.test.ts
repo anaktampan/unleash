@@ -1,11 +1,12 @@
 import faker from 'faker';
-import dbInit, { type ITestDb } from '../helpers/database-init';
-import getLogger from '../../fixtures/no-logger';
+import dbInit, { type ITestDb } from '../helpers/database-init.js';
+import getLogger from '../../fixtures/no-logger.js';
 import type {
     IClientApplicationsStore,
     IUnleashStores,
-} from '../../../lib/types';
-import type { IClientApplication } from '../../../lib/types/stores/client-applications-store';
+} from '../../../lib/types/index.js';
+import type { IClientApplication } from '../../../lib/types/stores/client-applications-store.js';
+import { subDays } from 'date-fns';
 
 let db: ITestDb;
 let stores: IUnleashStores;
@@ -174,4 +175,34 @@ test('Multi row merge also works', async () => {
         expect(s!.description).toBe(clients[i].description);
         expect(s!.icon).toBe('red');
     });
+});
+
+test('Remove inactive applications', async () => {
+    const clientRegistration = {
+        appName: faker.internet.domainName(),
+        instanceId: faker.datatype.uuid(),
+        strategies: ['default'],
+        started: Date.now(),
+        interval: faker.datatype.number(),
+        sdkVersion: '3.11.2',
+        icon: '',
+        description: faker.company.catchPhrase(),
+        color: faker.internet.color(),
+    };
+
+    await clientApplicationsStore.upsert({
+        ...clientRegistration,
+        lastSeen: subDays(Date.now(), 29),
+    });
+    const noRemovedItems =
+        await clientApplicationsStore.removeInactiveApplications();
+    expect(noRemovedItems).toBe(0);
+
+    await clientApplicationsStore.upsert({
+        ...clientRegistration,
+        lastSeen: subDays(Date.now(), 30),
+    });
+    const removedItems =
+        await clientApplicationsStore.removeInactiveApplications();
+    expect(removedItems).toBe(1);
 });

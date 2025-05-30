@@ -1,11 +1,11 @@
-import type FeatureToggleService from '../feature-toggle-service';
-import { createTestConfig } from '../../../../test/config/test-config';
+import type { FeatureToggleService } from '../feature-toggle-service.js';
+import { createTestConfig } from '../../../../test/config/test-config.js';
 import dbInit, {
     type ITestDb,
-} from '../../../../test/e2e/helpers/database-init';
-import { DEFAULT_ENV, extractAuditInfoFromUser } from '../../../util';
-import type { FeatureStrategySchema } from '../../../openapi';
-import type User from '../../../types/user';
+} from '../../../../test/e2e/helpers/database-init.js';
+import { DEFAULT_ENV, extractAuditInfoFromUser } from '../../../util/index.js';
+import type { FeatureStrategySchema } from '../../../openapi/index.js';
+import type User from '../../../types/user.js';
 import {
     type IConstraint,
     type IUnleashConfig,
@@ -14,27 +14,37 @@ import {
     SKIP_CHANGE_REQUEST,
     SYSTEM_USER_AUDIT,
     TEST_AUDIT_USER,
-} from '../../../types';
-import EnvironmentService from '../../project-environments/environment-service';
+} from '../../../types/index.js';
+import EnvironmentService from '../../project-environments/environment-service.js';
 import {
     ForbiddenError,
     NotFoundError,
     PatternError,
     PermissionError,
-} from '../../../error';
-import type { ISegmentService } from '../../segment/segment-service-interface';
+} from '../../../error/index.js';
+import type { ISegmentService } from '../../segment/segment-service-interface.js';
 import {
     createEventsService,
+    createFeatureLinkService,
     createFeatureToggleService,
     createSegmentService,
-} from '../..';
-import { insertLastSeenAt } from '../../../../test/e2e/helpers/test-helper';
-import type { EventService } from '../../../services';
-
+} from '../../index.js';
+import { insertLastSeenAt } from '../../../../test/e2e/helpers/test-helper.js';
+import type { EventService } from '../../../services/index.js';
+import type FeatureLinkService from '../../feature-links/feature-link-service.js';
+import {
+    beforeAll,
+    afterAll,
+    beforeEach,
+    test,
+    expect,
+    describe,
+} from 'vitest';
 let stores: IUnleashStores;
 let db: ITestDb;
 let service: FeatureToggleService;
 let segmentService: ISegmentService;
+let featureLinkService: FeatureLinkService;
 let eventService: EventService;
 let environmentService: EnvironmentService;
 let unleashConfig: IUnleashConfig;
@@ -49,18 +59,26 @@ const mockConstraints = (): IConstraint[] => {
 const irrelevantDate = new Date();
 
 beforeAll(async () => {
-    const config = createTestConfig({
-        experimental: { flags: {} },
-    });
+    const flags = {
+        featureLinks: true,
+        projectLinkTemplates: true,
+    };
+    const config = createTestConfig({ experimental: { flags } });
+
     db = await dbInit(
         'feature_toggle_service_v2_service_serial',
         config.getLogger,
-        { dbInitMethod: 'legacy' as const },
+        {
+            dbInitMethod: 'legacy' as const,
+            experimental: { flags },
+        },
     );
     unleashConfig = config;
     stores = db.stores;
 
     segmentService = createSegmentService(db.rawDatabase, config);
+
+    featureLinkService = createFeatureLinkService(config)(db.rawDatabase);
 
     service = createFeatureToggleService(db.rawDatabase, config);
 
@@ -374,7 +392,7 @@ test('cloning a feature flag not allowed for change requests enabled', async () 
             SYSTEM_USER_AUDIT,
             true,
         ),
-    ).rejects.toEqual(
+    ).rejects.errorWithMessage(
         new ForbiddenError(
             `Cloning not allowed. Project default has change requests enabled.`,
         ),
@@ -388,7 +406,7 @@ test('changing to a project with change requests enabled should not be allowed',
     });
     await expect(
         service.changeProject('newFlagName', 'default', TEST_AUDIT_USER),
-    ).rejects.toEqual(
+    ).rejects.errorWithMessage(
         new ForbiddenError(
             `Changing project not allowed. Project default has change requests enabled.`,
         ),
@@ -520,7 +538,9 @@ test('If change requests are enabled, cannot change variants without going via C
             TEST_AUDIT_USER,
             [],
         ),
-    ).rejects.toThrowError(new PermissionError(SKIP_CHANGE_REQUEST));
+    ).rejects.toThrowError(
+        expect.errorWithMessage(new PermissionError(SKIP_CHANGE_REQUEST)),
+    );
 });
 
 test('If CRs are protected for any environment in the project stops bulk update of variants', async () => {
@@ -609,7 +629,9 @@ test('If CRs are protected for any environment in the project stops bulk update 
             },
             TEST_AUDIT_USER,
         ),
-    ).rejects.toThrowError(new PermissionError(SKIP_CHANGE_REQUEST));
+    ).rejects.toThrowError(
+        expect.errorWithMessage(new PermissionError(SKIP_CHANGE_REQUEST)),
+    );
 });
 
 test('getPlaygroundFeatures should return ids and titles (if they exist) on client strategies', async () => {
@@ -788,7 +810,7 @@ test('Should not allow to add flags to archived projects', async () => {
             },
             TEST_AUDIT_USER,
         ),
-    ).rejects.toEqual(
+    ).rejects.errorWithMessage(
         new NotFoundError(
             `Active project with id archivedProject does not exist`,
         ),
@@ -817,7 +839,7 @@ test('Should not allow to revive flags to archived projects', async () => {
 
     await expect(
         service.reviveFeature(flag.name, TEST_AUDIT_USER),
-    ).rejects.toEqual(
+    ).rejects.errorWithMessage(
         new NotFoundError(
             `Active project with id archivedProjectWithFlag does not exist`,
         ),
@@ -825,7 +847,7 @@ test('Should not allow to revive flags to archived projects', async () => {
 
     await expect(
         service.reviveFeatures([flag.name], project.id, TEST_AUDIT_USER),
-    ).rejects.toEqual(
+    ).rejects.errorWithMessage(
         new NotFoundError(
             `Active project with id archivedProjectWithFlag does not exist`,
         ),
@@ -877,4 +899,48 @@ test('Should enable disabled strategies on feature environment enabled', async (
 
     const strategy = await service.getStrategy(createdConfig.id);
     expect(strategy).toMatchObject({ ...config, disabled: false });
+});
+
+test('Should add links from templates when creating a feature flag', async () => {
+    const projectId = 'default';
+    const featureName = 'test-link-feature';
+
+    await stores.projectStore.updateProjectEnterpriseSettings({
+        id: projectId,
+        linkTemplates: [
+            {
+                title: 'Issue tracker',
+                urlTemplate:
+                    'https://issues.example.com/project/{{project}}/tasks/{{feature}}',
+            },
+            {
+                title: 'Docs',
+                urlTemplate: 'https://docs.example.com/{{project}}/{{feature}}',
+            },
+        ],
+    });
+
+    await service.createFeatureToggle(
+        projectId,
+        { name: featureName },
+        TEST_AUDIT_USER,
+    );
+
+    const links = await featureLinkService.getAll();
+
+    expect(links.length).toBe(2);
+    expect(links).toEqual(
+        expect.arrayContaining([
+            expect.objectContaining({
+                title: 'Issue tracker',
+                url: `https://issues.example.com/project/${projectId}/tasks/${featureName}`,
+                featureName,
+            }),
+            expect.objectContaining({
+                title: 'Docs',
+                url: `https://docs.example.com/${projectId}/${featureName}`,
+                featureName,
+            }),
+        ]),
+    );
 });

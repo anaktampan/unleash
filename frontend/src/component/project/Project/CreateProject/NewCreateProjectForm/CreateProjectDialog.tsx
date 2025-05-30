@@ -9,7 +9,7 @@ import FormTemplate from 'component/common/FormTemplate/FormTemplate';
 import { CREATE_PROJECT } from 'component/providers/AccessProvider/permissions';
 import useProjectForm, {
     DEFAULT_PROJECT_STICKINESS,
-} from '../../hooks/useProjectForm';
+} from '../../hooks/useProjectForm.ts';
 import { usePlausibleTracker } from 'hooks/usePlausibleTracker';
 import { type ReactNode, useState, type FormEvent, useEffect } from 'react';
 import { useAuthUser } from 'hooks/api/getters/useAuth/useAuthUser';
@@ -24,10 +24,9 @@ import { MultiSelectConfigButton } from 'component/common/DialogFormTemplate/Con
 import { SingleSelectConfigButton } from 'component/common/DialogFormTemplate/ConfigButtons/SingleSelectConfigButton';
 import { useEnvironments } from 'hooks/api/getters/useEnvironments/useEnvironments';
 import { useStickinessOptions } from 'hooks/useStickinessOptions';
-import { ChangeRequestTableConfigButton } from './ConfigButtons/ChangeRequestTableConfigButton';
+import { ChangeRequestTableConfigButton } from './ConfigButtons/ChangeRequestTableConfigButton.tsx';
 import { StyledDefinitionList } from './CreateProjectDialog.styles';
 import { ProjectIcon } from 'component/common/ProjectIcon/ProjectIcon';
-import { useUiFlag } from 'hooks/useUiFlag';
 
 interface ICreateProjectDialogProps {
     open: boolean;
@@ -210,10 +209,6 @@ export const CreateProjectDialog = ({
     const activeEnvironments = allEnvironments.filter((env) => env.enabled);
     const stickinessOptions = useStickinessOptions(projectStickiness);
 
-    const globalChangeRequestConfigEnabled = useUiFlag(
-        'globalChangeRequestConfig',
-    );
-
     const numberOfConfiguredChangeRequestEnvironments = Object.keys(
         projectChangeRequestConfiguration,
     ).length;
@@ -234,13 +229,10 @@ export const CreateProjectDialog = ({
         name,
         type,
         requiredApprovals,
-        configurable: globalChangeRequestConfigEnabled
-            ? !Number.isInteger(requiredApprovals)
-            : true,
+        configurable: !Number.isInteger(requiredApprovals),
     }));
 
     useEffect(() => {
-        if (!globalChangeRequestConfigEnabled) return;
         availableChangeRequestEnvironments.forEach((environment) => {
             if (Number.isInteger(environment.requiredApprovals)) {
                 updateProjectChangeRequestConfig.enableChangeRequests(

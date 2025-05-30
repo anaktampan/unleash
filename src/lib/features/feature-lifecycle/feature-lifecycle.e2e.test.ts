@@ -1,23 +1,28 @@
-import dbInit, { type ITestDb } from '../../../test/e2e/helpers/database-init';
+import dbInit, {
+    type ITestDb,
+} from '../../../test/e2e/helpers/database-init.js';
 import {
     type IUnleashTest,
     setupAppWithAuth,
-} from '../../../test/e2e/helpers/test-helper';
-import getLogger from '../../../test/fixtures/no-logger';
+} from '../../../test/e2e/helpers/test-helper.js';
+import getLogger from '../../../test/fixtures/no-logger.js';
 import {
     CLIENT_METRICS_ADDED,
     FEATURE_ARCHIVED,
     FEATURE_CREATED,
     FEATURE_REVIVED,
-    type IEventStore,
-    type IFeatureLifecycleStore,
-    type StageName,
-} from '../../types';
+} from '../../events/index.js';
+import type {
+    IEventStore,
+    IFeatureLifecycleStore,
+    StageName,
+} from '../../types/index.js';
 import type EventEmitter from 'events';
-import type { FeatureLifecycleCompletedSchema } from '../../openapi';
-import { FeatureLifecycleReadModel } from './feature-lifecycle-read-model';
-import type { IFeatureLifecycleReadModel } from './feature-lifecycle-read-model-type';
-import { STAGE_ENTERED } from '../../metric-events';
+import type { FeatureLifecycleCompletedSchema } from '../../openapi/index.js';
+import { FeatureLifecycleReadModel } from './feature-lifecycle-read-model.js';
+import type { IFeatureLifecycleReadModel } from './feature-lifecycle-read-model-type.js';
+import { STAGE_ENTERED } from '../../metric-events.js';
+import type ClientInstanceService from '../metrics/instance/instance-service.js';
 
 let app: IUnleashTest;
 let db: ITestDb;
@@ -25,6 +30,7 @@ let featureLifecycleStore: IFeatureLifecycleStore;
 let eventStore: IEventStore;
 let eventBus: EventEmitter;
 let featureLifecycleReadModel: IFeatureLifecycleReadModel;
+let clientInstanceService: ClientInstanceService;
 
 beforeAll(async () => {
     db = await dbInit('feature_lifecycle', getLogger, {
@@ -41,11 +47,9 @@ beforeAll(async () => {
     );
     eventStore = db.stores.eventStore;
     eventBus = app.config.eventBus;
-    featureLifecycleReadModel = new FeatureLifecycleReadModel(
-        db.rawDatabase,
-        app.config.flagResolver,
-    );
+    featureLifecycleReadModel = new FeatureLifecycleReadModel(db.rawDatabase);
     featureLifecycleStore = db.stores.featureLifecycleStore;
+    clientInstanceService = app.services.clientInstanceService;
 
     await app.request
         .post(`/auth/demo/login`)
@@ -61,6 +65,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+    await clientInstanceService.bulkAdd(); // flush
     await featureLifecycleStore.deleteAll();
 });
 
@@ -113,6 +118,10 @@ const expectFeatureStage = async (featureName: string, stage: StageName) => {
         stage,
         enteredStageAt: expect.any(String),
     });
+};
+
+const getFeaturesLifecycleCount = async () => {
+    return app.request.get(`/api/admin/lifecycle/count`).expect(200);
 };
 
 test('should return lifecycle stages', async () => {
@@ -173,6 +182,15 @@ test('should return lifecycle stages', async () => {
 
     eventStore.emit(FEATURE_REVIVED, { featureName: 'my_feature_a' });
     await reachedStage('my_feature_a', 'initial');
+
+    const { body: lifecycleCount } = await getFeaturesLifecycleCount();
+    expect(lifecycleCount).toEqual({
+        initial: 1,
+        preLive: 0,
+        live: 0,
+        completed: 0,
+        archived: 0,
+    });
 });
 
 test('should be able to toggle between completed/uncompleted', async () => {

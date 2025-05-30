@@ -1,5 +1,5 @@
 import joi from 'joi';
-import type { IMetricsBucket } from '../../../types';
+import type { IMetricsBucket } from '../../../types/index.js';
 
 const countSchema = joi
     .object()
@@ -69,6 +69,22 @@ export const applicationSchema = joi
         announced: joi.boolean().optional().default(false),
     });
 
+export const customMetricSchema = joi
+    .object()
+    .options({ stripUnknown: true })
+    .keys({
+        name: joi.string().required(),
+        value: joi.number().required(),
+        labels: joi.object().pattern(joi.string(), joi.string()).optional(),
+    });
+
+export const customMetricsSchema = joi
+    .object()
+    .options({ stripUnknown: true })
+    .keys({
+        metrics: joi.array().items(customMetricSchema).required(),
+    });
+
 export const batchMetricsSchema = joi
     .object()
     .options({ stripUnknown: true })
@@ -84,10 +100,7 @@ export const clientRegisterSchema = joi
         appName: joi.string().required(),
         instanceId: joi.string().empty(['', null]).default('default'),
         sdkVersion: joi.string().optional(),
-        strategies: joi
-            .array()
-            .required()
-            .items(joi.string(), joi.any().strip()),
+        strategies: joi.array().items(joi.string(), joi.any().strip()),
         started: joi.date().required(),
         interval: joi.number().required(),
         environment: joi.string().optional(),

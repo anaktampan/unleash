@@ -1,6 +1,6 @@
 import { render } from 'utils/testRenderer';
 import { fireEvent, screen } from '@testing-library/react';
-import { RestrictiveLegalValues } from './RestrictiveLegalValues';
+import { RestrictiveLegalValues } from './RestrictiveLegalValues.tsx';
 import { vi } from 'vitest';
 
 vi.mock('../../../../../../hooks/useUiFlag', () => ({
@@ -28,7 +28,7 @@ test('should show alert when you have illegal legal values', async () => {
     );
 
     await screen.findByText(
-        'This constraint is using legal values that have been deleted as valid options. If you save changes on this constraint and then save the strategy the following values will be removed:',
+        'This constraint is currently using values that were valid in the past but have since been deleted. If you save changes on this constraint and then save the strategy the following values will be removed:',
     );
 });
 

@@ -1,12 +1,12 @@
 import dbInit, {
     type ITestDb,
-} from '../../../../test/e2e/helpers/database-init';
+} from '../../../../test/e2e/helpers/database-init.js';
 import {
     type IUnleashTest,
     setupAppWithCustomConfig,
-} from '../../../../test/e2e/helpers/test-helper';
-import getLogger from '../../../../test/fixtures/no-logger';
-import { DEFAULT_ENV } from '../../../util/constants';
+} from '../../../../test/e2e/helpers/test-helper.js';
+import getLogger from '../../../../test/fixtures/no-logger.js';
+import { DEFAULT_ENV } from '../../../util/constants.js';
 import {
     FEATURE_ENVIRONMENT_DISABLED,
     FEATURE_ENVIRONMENT_ENABLED,
@@ -14,26 +14,26 @@ import {
     FEATURE_STALE_OFF,
     FEATURE_STALE_ON,
     FEATURE_STRATEGY_REMOVE,
-} from '../../../types/events';
-import ApiUser from '../../../types/api-user';
-import { ApiTokenType, type IApiToken } from '../../../types/models/api-token';
-import IncompatibleProjectError from '../../../error/incompatible-project-error';
+} from '../../../events/index.js';
+import ApiUser from '../../../types/api-user.js';
+import { ApiTokenType, type IApiToken } from '../../../types/model.js';
+import IncompatibleProjectError from '../../../error/incompatible-project-error.js';
 import {
     type IStrategyConfig,
     type IVariant,
     RoleName,
     WeightType,
-} from '../../../types/model';
+} from '../../../types/model.js';
 import { v4 as uuidv4 } from 'uuid';
 import type supertest from 'supertest';
-import { randomId } from '../../../util/random-id';
-import { DEFAULT_PROJECT, TEST_AUDIT_USER } from '../../../types';
+import { randomId } from '../../../util/random-id.js';
+import { DEFAULT_PROJECT, TEST_AUDIT_USER } from '../../../types/index.js';
 import type {
     FeatureStrategySchema,
     SetStrategySortOrderSchema,
-} from '../../../openapi';
-import { ForbiddenError } from '../../../error';
-
+} from '../../../openapi/index.js';
+import { ForbiddenError } from '../../../error/index.js';
+import { beforeAll, afterEach, afterAll, test, describe, expect } from 'vitest';
 let app: IUnleashTest;
 let db: ITestDb;
 let defaultToken: IApiToken;
@@ -282,7 +282,7 @@ test('should not allow to change project with dependencies', async () => {
             'default',
             TEST_AUDIT_USER,
         ),
-    ).rejects.toThrow(
+    ).rejects.errorWithMessage(
         new ForbiddenError(
             'Changing project not allowed. Feature has dependencies.',
         ),
@@ -1036,7 +1036,8 @@ test('Patching feature flags to active (turning stale to false) should trigger F
 });
 
 test('Should archive feature flag', async () => {
-    const url = '/api/admin/projects/default/features';
+    const projectId = 'default';
+    const url = `/api/admin/projects/${projectId}/features`;
     const name = 'new.flag.archive';
     await app.request
         .post(url)
@@ -1046,7 +1047,9 @@ test('Should archive feature flag', async () => {
 
     await app.request.get(`${url}/${name}`).expect(404);
     const { body } = await app.request
-        .get(`/api/admin/archive/features`)
+        .get(
+            `/api/admin/search/features?project=IS%3A${projectId}&archived=IS%3Atrue`,
+        )
         .expect(200);
 
     const flag = body.features.find((f) => f.name === name);
@@ -2326,7 +2329,7 @@ test('Should not allow changing project to target project without the same enabl
             'default',
             TEST_AUDIT_USER,
         ),
-    ).rejects.toThrow(new IncompatibleProjectError(targetProject));
+    ).rejects.errorWithMessage(new IncompatibleProjectError(targetProject));
 });
 
 test('Should allow changing project to target project with the same enabled environments', async () => {
@@ -2398,7 +2401,7 @@ test('Should allow changing project to target project with the same enabled envi
         environment: '*',
         secret: 'a',
     });
-    await expect(async () =>
+    await expect(
         app.services.projectService.changeProject(
             targetProject,
             featureName,

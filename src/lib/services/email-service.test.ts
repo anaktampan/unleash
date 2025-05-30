@@ -1,7 +1,7 @@
-import nodemailer from 'nodemailer';
-import { EmailService } from './email-service';
-import noLoggerProvider from '../../test/fixtures/no-logger';
-import type { IUnleashConfig } from '../types';
+import { EmailService, type TransportProvider } from './email-service.js';
+import noLoggerProvider from '../../test/fixtures/no-logger.js';
+import type { IUnleashConfig } from '../types/index.js';
+import { vi } from 'vitest';
 
 test('Can send reset email', async () => {
     const emailService = new EmailService({
@@ -40,6 +40,9 @@ test('Can send welcome mail', async () => {
             sender: 'noreply@getunleash.ai',
         },
         getLogger: noLoggerProvider,
+        flagResolver: {
+            isEnabled: () => true,
+        },
     } as unknown as IUnleashConfig);
     const content = await emailService.sendGettingStartedMail(
         'Some username',
@@ -51,24 +54,27 @@ test('Can send welcome mail', async () => {
 });
 
 test('Can supply additional SMTP transport options', async () => {
-    const spy = jest.spyOn(nodemailer, 'createTransport');
+    const transport = vi.fn() as unknown as TransportProvider;
 
-    new EmailService({
-        email: {
-            host: 'smtp.unleash.test',
-            port: 9999,
-            secure: false,
-            sender: 'noreply@getunleash.ai',
-            transportOptions: {
-                tls: {
-                    rejectUnauthorized: true,
+    new EmailService(
+        {
+            email: {
+                host: 'smtp.unleash.test',
+                port: 9999,
+                secure: false,
+                sender: 'noreply@getunleash.ai',
+                transportOptions: {
+                    tls: {
+                        rejectUnauthorized: true,
+                    },
                 },
             },
-        },
-        getLogger: noLoggerProvider,
-    } as unknown as IUnleashConfig);
+            getLogger: noLoggerProvider,
+        } as unknown as IUnleashConfig,
+        transport,
+    );
 
-    expect(spy).toHaveBeenCalledWith({
+    expect(transport).toHaveBeenCalledWith({
         auth: {
             user: '',
             pass: '',
