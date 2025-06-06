@@ -8,8 +8,8 @@ import {
     styled,
 } from '@mui/material';
 import type { IConstraint } from 'interfaces/strategy';
-import { ConstraintAccordionViewBody } from './ConstraintAccordionViewBody/ConstraintAccordionViewBody';
-import { ConstraintAccordionViewHeader } from './ConstraintAccordionViewHeader/ConstraintAccordionViewHeader';
+import { ConstraintAccordionViewBody } from './ConstraintAccordionViewBody/ConstraintAccordionViewBody.tsx';
+import { ConstraintAccordionViewHeader } from './ConstraintAccordionViewHeader/ConstraintAccordionViewHeader.tsx';
 import { oneOf } from 'utils/oneOf';
 import {
     dateOperators,
@@ -21,14 +21,22 @@ interface IConstraintAccordionViewProps {
     constraint: IConstraint;
     onDelete?: () => void;
     onEdit?: () => void;
+    onUse?: () => void;
     sx?: SxProps<Theme>;
     compact?: boolean;
     disabled?: boolean;
     renderAfter?: JSX.Element;
+    borderStyle?: 'solid' | 'dashed';
 }
 
-const StyledAccordion = styled(Accordion)(({ theme }) => ({
-    border: `1px solid ${theme.palette.divider}`,
+interface StyledAccordionProps {
+    borderStyle?: 'solid' | 'dashed';
+}
+
+const StyledAccordion = styled(Accordion, {
+    shouldForwardProp: (prop) => prop !== 'borderStyle',
+})<StyledAccordionProps>(({ theme, borderStyle = 'solid' }) => ({
+    border: `1px ${borderStyle} ${theme.palette.divider}`,
     borderRadius: theme.shape.borderRadiusMedium,
     boxShadow: 'none',
     margin: 0,
@@ -67,10 +75,12 @@ export const ConstraintAccordionView = ({
     constraint,
     onEdit,
     onDelete,
+    onUse,
     sx = undefined,
     compact = false,
     disabled = false,
     renderAfter,
+    borderStyle = 'solid',
 }: IConstraintAccordionViewProps) => {
     const [expandable, setExpandable] = useState(true);
     const [expanded, setExpanded] = useState(false);
@@ -86,7 +96,7 @@ export const ConstraintAccordionView = ({
     };
 
     return (
-        <StyledAccordion expanded={expanded} sx={sx}>
+        <StyledAccordion expanded={expanded} sx={sx} borderStyle={borderStyle}>
             <StyledAccordionSummary
                 expandIcon={null}
                 onClick={handleClick}
@@ -103,6 +113,7 @@ export const ConstraintAccordionView = ({
                         constraint={constraint}
                         onEdit={onEdit}
                         onDelete={onDelete}
+                        onUse={onUse}
                         singleValue={singleValue}
                         allowExpand={setExpandable}
                         disabled={disabled}

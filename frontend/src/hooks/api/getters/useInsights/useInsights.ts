@@ -1,7 +1,7 @@
 import useSWR, { mutate, type SWRConfiguration } from 'swr';
 import { useCallback } from 'react';
 import { formatApiPath } from 'utils/formatPath';
-import handleErrorResponses from '../httpErrorResponseHandler';
+import handleErrorResponses from '../httpErrorResponseHandler.js';
 import type {
     InstanceInsightsSchema,
     GetInstanceInsightsParams,
@@ -27,6 +27,7 @@ export const useInsights = (
     return {
         insights:
             data ||
+            /* @ts-expect-error FIXME (lifecycleMetrics): lifecycle trends */
             ({
                 userTrends: [],
                 flagTrends: [],

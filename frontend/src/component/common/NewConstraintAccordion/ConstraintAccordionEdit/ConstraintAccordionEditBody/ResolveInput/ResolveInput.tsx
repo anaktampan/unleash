@@ -3,11 +3,11 @@ import type {
     IUnleashContextDefinition,
 } from 'interfaces/context';
 import type { IConstraint } from 'interfaces/strategy';
-import { DateSingleValue } from '../DateSingleValue/DateSingleValue';
-import { FreeTextInput } from '../FreeTextInput/FreeTextInput';
-import { RestrictiveLegalValues } from '../RestrictiveLegalValues/RestrictiveLegalValues';
-import { SingleLegalValue } from '../SingleLegalValue/SingleLegalValue';
-import { SingleValue } from '../SingleValue/SingleValue';
+import { DateSingleValue } from '../DateSingleValue/DateSingleValue.tsx';
+import { FreeTextInput } from '../FreeTextInput/FreeTextInput.tsx';
+import { RestrictiveLegalValues } from '../RestrictiveLegalValues/RestrictiveLegalValues.tsx';
+import { SingleLegalValue } from '../SingleLegalValue/SingleLegalValue.tsx';
+import { SingleValue } from '../SingleValue/SingleValue.tsx';
 import {
     IN_OPERATORS_LEGAL_VALUES,
     STRING_OPERATORS_FREETEXT,
@@ -19,7 +19,7 @@ import {
     DATE_OPERATORS_SINGLE_VALUE,
     IN_OPERATORS_FREETEXT,
     type Input,
-} from '../useConstraintInput/useConstraintInput';
+} from '../useConstraintInput/useConstraintInput.tsx';
 import type React from 'react';
 
 interface IResolveInputProps {
@@ -62,6 +62,13 @@ const resolveLegalValues = (
     };
 };
 
+/**
+ * @deprecated; remove with `addEditStrategy` flag. Need an input? Prefer using specific input components.
+ *
+ * For the case of `ProjectActionsFilterItem.tsx`: it already excludes legal
+ * values and date operators. This leaves only free text and single value
+ * text/numeric operators. Alternatively, consider rewriting this component to only handle those cases.
+ */
 export const ResolveInput = ({
     input,
     contextDefinition,
@@ -80,20 +87,18 @@ export const ResolveInput = ({
             case IN_OPERATORS_LEGAL_VALUES:
             case STRING_OPERATORS_LEGAL_VALUES:
                 return (
-                    <>
-                        <RestrictiveLegalValues
-                            data={resolveLegalValues(
-                                constraintValues,
-                                contextDefinition.legalValues,
-                            )}
-                            constraintValues={constraintValues}
-                            values={localConstraint.values || []}
-                            setValuesWithRecord={setValuesWithRecord}
-                            setValues={setValues}
-                            error={error}
-                            setError={setError}
-                        />
-                    </>
+                    <RestrictiveLegalValues
+                        data={resolveLegalValues(
+                            constraintValues,
+                            contextDefinition.legalValues,
+                        )}
+                        constraintValues={constraintValues}
+                        values={localConstraint.values || []}
+                        setValuesWithRecord={setValuesWithRecord}
+                        setValues={setValues}
+                        error={error}
+                        setError={setError}
+                    />
                 );
             case NUM_OPERATORS_LEGAL_VALUES:
                 return (

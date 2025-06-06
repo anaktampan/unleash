@@ -1,6 +1,6 @@
 import type { CreateFeatureSchemaType, FeatureSchema } from 'openapi';
-import type { IFeatureStrategy } from './strategy';
-import type { ITag } from './tags';
+import type { IFeatureStrategy } from './strategy.js';
+import type { ITag } from './tags.js';
 
 /**
  * @deprecated use FeatureSchema from openapi
@@ -49,6 +49,8 @@ export type CollaboratorData = {
     users: Collaborator[];
 };
 
+export type FeatureLink = { url: string; title: string | null; id: string };
+
 /**
  * @deprecated use FeatureSchema from openapi
  */
@@ -76,6 +78,7 @@ export interface IFeatureToggle {
         imageUrl: string;
     };
     collaborators?: CollaboratorData;
+    links?: FeatureLink[];
 }
 
 export interface IDependency {

@@ -1,24 +1,25 @@
 import {
     type IUnleashTest,
     setupAppWithCustomConfig,
-} from '../../helpers/test-helper';
-import dbInit, { type ITestDb } from '../../helpers/database-init';
-import getLogger from '../../../fixtures/no-logger';
+} from '../../helpers/test-helper.js';
+import dbInit, { type ITestDb } from '../../helpers/database-init.js';
+import getLogger from '../../../fixtures/no-logger.js';
 import {
     USER_CREATED,
     USER_DELETED,
     USER_UPDATED,
-} from '../../../../lib/types/events';
-import type { IRole } from '../../../../lib/types/stores/access-store';
-import type { IEventStore } from '../../../../lib/types/stores/event-store';
-import type { IUserStore } from '../../../../lib/types/stores/user-store';
-import { RoleName } from '../../../../lib/types/model';
-import type { IRoleStore } from '../../../../lib/types/stores/role-store';
-import { randomId } from '../../../../lib/util/random-id';
-import { omitKeys } from '../../../../lib/util/omit-keys';
-import type { ISessionStore } from '../../../../lib/types/stores/session-store';
-import type { IUnleashStores } from '../../../../lib/types';
+} from '../../../../lib/events/index.js';
+import type { IRole } from '../../../../lib/types/stores/access-store.js';
+import type { IEventStore } from '../../../../lib/types/stores/event-store.js';
+import type { IUserStore } from '../../../../lib/types/stores/user-store.js';
+import { RoleName } from '../../../../lib/types/model.js';
+import type { IRoleStore } from '../../../../lib/types/stores/role-store.js';
+import { randomId } from '../../../../lib/util/random-id.js';
+import { omitKeys } from '../../../../lib/util/omit-keys.js';
+import type { ISessionStore } from '../../../../lib/types/stores/session-store.js';
+import type { IUnleashStores } from '../../../../lib/types/index.js';
 import { createHash } from 'crypto';
+import { vi } from 'vitest';
 
 let stores: IUnleashStores;
 let db: ITestDb;
@@ -247,7 +248,7 @@ test('validator should accept strong password', async () => {
 
 test('should change password', async () => {
     const user = await userStore.insert({ email: 'some@mail.com' });
-    const spy = jest.spyOn(sessionStore, 'deleteSessionsForUser');
+    const spy = vi.spyOn(sessionStore, 'deleteSessionsForUser');
     await app.request
         .post(`/api/admin/user-admin/${user.id}/change-password`)
         .send({ password: 'simple123-_ASsad' })

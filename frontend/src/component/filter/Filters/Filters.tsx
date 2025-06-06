@@ -1,9 +1,12 @@
 import { type FC, useEffect, useState } from 'react';
 import { Box, Icon, styled } from '@mui/material';
 import { ConditionallyRender } from 'component/common/ConditionallyRender/ConditionallyRender';
-import { AddFilterButton } from '../AddFilterButton';
+import { AddFilterButton } from '../AddFilterButton.tsx';
 import { FilterDateItem } from 'component/common/FilterDateItem/FilterDateItem';
-import { FilterItem, type FilterItemParams } from '../FilterItem/FilterItem';
+import {
+    FilterItem,
+    type FilterItemParams,
+} from '../FilterItem/FilterItem.tsx';
 
 const StyledBox = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -39,7 +42,7 @@ type ITextFilterItem = IBaseFilterItem & {
     pluralOperators: [string, ...string[]];
 };
 
-type IDateFilterItem = IBaseFilterItem & {
+export type IDateFilterItem = IBaseFilterItem & {
     dateOperators: [string, ...string[]];
     fromFilterKey?: string;
     toFilterKey?: string;

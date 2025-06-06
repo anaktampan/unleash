@@ -1,10 +1,10 @@
-import { ConstraintFormHeader } from '../ConstraintFormHeader/ConstraintFormHeader';
+import { ConstraintFormHeader } from '../ConstraintFormHeader/ConstraintFormHeader.tsx';
 import Input from 'component/common/Input/Input';
 import { parseDateValue, parseValidDate } from 'component/common/util';
 
 import { useMemo, useState } from 'react';
 import { styled } from '@mui/material';
-import TimezoneCountries from 'countries-and-timezones';
+import { getAllTimezones } from 'countries-and-timezones';
 
 interface IDateSingleValueProps {
     setValue: (value: string) => void;
@@ -21,19 +21,23 @@ const StyledWrapper = styled('div')(({ theme }) => ({
     gap: theme.spacing(1),
 }));
 
+/**
+ * @deprecated use `component/feature/FeatureStrategy/FeatureStrategyConstraints/ConstraintDateInput.tsx`
+ * Remove with flag `addEditStrategy`
+ */
 export const DateSingleValue = ({
     setValue,
     value,
     error,
     setError,
 }: IDateSingleValueProps) => {
-    const timezones = Object.values(
-        TimezoneCountries.getAllTimezones({ deprecated: false }),
-    ).map((timezone) => ({
-        key: timezone.name,
-        label: `${timezone.name}`,
-        utcOffset: timezone.utcOffsetStr,
-    }));
+    const timezones = Object.values(getAllTimezones({ deprecated: false })).map(
+        (timezone) => ({
+            key: timezone.name,
+            label: `${timezone.name}`,
+            utcOffset: timezone.utcOffsetStr,
+        }),
+    );
     const { timeZone: localTimezoneName } =
         Intl.DateTimeFormat().resolvedOptions();
     const [pickedDate, setPickedDate] = useState(value || '');
