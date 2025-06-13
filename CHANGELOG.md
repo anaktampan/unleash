@@ -2,6 +2,1057 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.1] - 2025-06-13
+
+### Bug Fixes
+
+- Docker compose file should use default command from the image ([#10124](https://github.com/Unleash/unleash/issues/10124))
+
+- Use technicalDebt property from backend ([#10111](https://github.com/Unleash/unleash/issues/10111))
+
+- Md5 is deprecated and fails FEDRAMP. Replace with sha256 ([#10125](https://github.com/Unleash/unleash/issues/10125))
+
+- Health to debt with ui-flag ([#10131](https://github.com/Unleash/unleash/issues/10131))
+
+
+### Documentation
+
+- Unleash v7 upgrade docs ([#10097](https://github.com/Unleash/unleash/issues/10097))
+
+
+### Features
+
+- Ability to run npm release from branch ([#10120](https://github.com/Unleash/unleash/issues/10120))
+
+- Ability to query users with pagination ([#10130](https://github.com/Unleash/unleash/issues/10130))
+
+
+### Miscellaneous Tasks
+
+- Bumped Yarn to 4.9.2 ([#10126](https://github.com/Unleash/unleash/issues/10126))
+
+- Update Slack App URL ([#10129](https://github.com/Unleash/unleash/issues/10129))
+
+- Use real data for lifecycle trends ([#10117](https://github.com/Unleash/unleash/issues/10117))
+
+- If there's only a single available filter, always show that filter (don't hide it beneath a filters button) ([#10127](https://github.com/Unleash/unleash/issues/10127))
+
+- Remove flag newGettingStartedEmail ([#10136](https://github.com/Unleash/unleash/issues/10136))
+
+
+## [7.0.0] - 2025-06-11
+
+### 1-3744
+
+- Set a min-width for context field selector + underline when not focused ([#9991](https://github.com/Unleash/unleash/issues/9991))
+
+
+### Bug Fixes
+
+- Project environments have info about required approvals ([#9929](https://github.com/Unleash/unleash/issues/9929))
+
+- Avoid focus loss when using popover (and don't close multi-value popover after adding a value) ([#9951](https://github.com/Unleash/unleash/issues/9951))
+
+- Ensure linkTemplates defaults to an empty array if not provided
+
+- Don't autofocus the editable constraint field. ([#9982](https://github.com/Unleash/unleash/issues/9982))
+
+- Now feature is not pulled from server if not defined ([#10000](https://github.com/Unleash/unleash/issues/10000))
+
+- Hide project archive in OSS ([#10004](https://github.com/Unleash/unleash/issues/10004))
+
+- Setup cobertura coverage
+
+- Fix incorrect parameter usage to coverallsapp github action
+
+- Now feature component is not loaded before we have feature infor… ([#10012](https://github.com/Unleash/unleash/issues/10012))
+
+- Update config to make GHA reporting be better
+
+- Make revision id not be so reactive ([#10032](https://github.com/Unleash/unleash/issues/10032))
+
+- Removed docs folder and replaced with openapi-static ([#10042](https://github.com/Unleash/unleash/issues/10042))
+
+- Removed docs folder and replaced with openapi-static ([#10044](https://github.com/Unleash/unleash/issues/10044))
+
+- Allow openapi-static in docker ([#10045](https://github.com/Unleash/unleash/issues/10045))
+
+- Update dependency make-fetch-happen to v14 ([#10051](https://github.com/Unleash/unleash/issues/10051))
+
+- Update dependency pg to v8.16.0 ([#10054](https://github.com/Unleash/unleash/issues/10054))
+
+- Update dependency pg-connection-string to v2.9.0 ([#10055](https://github.com/Unleash/unleash/issues/10055))
+
+- Do not allow creating cr for same environment ([#10010](https://github.com/Unleash/unleash/issues/10010))
+
+- Regexes in flag naming patterns will now break when necessary ([#10067](https://github.com/Unleash/unleash/issues/10067))
+
+- Case sensitive icon has wrong fill color in dark mode ([#10068](https://github.com/Unleash/unleash/issues/10068))
+
+- Add event listeners for release plan updates in metrics ([#10070](https://github.com/Unleash/unleash/issues/10070))
+
+- Docker oss image now running with ESM ([#10073](https://github.com/Unleash/unleash/issues/10073))
+
+- Docs generation due to openapi static images ([#10078](https://github.com/Unleash/unleash/issues/10078))
+
+- Orval for ESM ([#10086](https://github.com/Unleash/unleash/issues/10086))
+
+- Enterprise image zoom ([#10081](https://github.com/Unleash/unleash/issues/10081))
+
+
+### Chore
+
+- Improve performance for large lists of legal values ([#9978](https://github.com/Unleash/unleash/issues/9978))
+
+- [**breaking**] Block deletion of context fields in use ([#10005](https://github.com/Unleash/unleash/issues/10005))
+
+- Add skeleton loaders for lifecycle trend numbers ([#10103](https://github.com/Unleash/unleash/issues/10103))
+
+
+### Documentation
+
+- Change 'Get a demo' to 'Start free trial' ([#9947](https://github.com/Unleash/unleash/issues/9947))
+
+- Update UI docs and screenshots for v6.10 ([#9902](https://github.com/Unleash/unleash/issues/9902))
+
+- Explain health API properly ([#10009](https://github.com/Unleash/unleash/issues/10009))
+
+- Update CHANGELOG.md
+
+
+### Features
+
+- Feature links section ([#9915](https://github.com/Unleash/unleash/issues/9915))
+
+- Add link ui ([#9918](https://github.com/Unleash/unleash/issues/9918))
+
+- Shared add link dialogue for 2 paths ([#9920](https://github.com/Unleash/unleash/issues/9920))
+
+- Delete link UI ([#9923](https://github.com/Unleash/unleash/issues/9923))
+
+- Edit link UI ([#9926](https://github.com/Unleash/unleash/issues/9926))
+
+- Order links by insertion order ([#9928](https://github.com/Unleash/unleash/issues/9928))
+
+- Add domain to links ([#9930](https://github.com/Unleash/unleash/issues/9930))
+
+- Store domain for links ([#9931](https://github.com/Unleash/unleash/issues/9931))
+
+- Report top used domains ([#9934](https://github.com/Unleash/unleash/issues/9934))
+
+- Prevent more than 10 links in the UI and backend ([#9937](https://github.com/Unleash/unleash/issues/9937))
+
+- Report feature links by domain ([#9936](https://github.com/Unleash/unleash/issues/9936))
+
+- External link templates ([#9927](https://github.com/Unleash/unleash/issues/9927))
+
+- Add tooltips to constraint operator buttons ([#9941](https://github.com/Unleash/unleash/issues/9941))
+
+- Remove instances older than 1 day not 2 days ([#9944](https://github.com/Unleash/unleash/issues/9944))
+
+- Ui for external link templates ([#9945](https://github.com/Unleash/unleash/issues/9945))
+
+- Use modal for managing link templates ([#9955](https://github.com/Unleash/unleash/issues/9955))
+
+- Export feature links ([#9954](https://github.com/Unleash/unleash/issues/9954))
+
+- Import feature links ([#9958](https://github.com/Unleash/unleash/issues/9958))
+
+- Add input box for gradual rollout slider ([#9960](https://github.com/Unleash/unleash/issues/9960))
+
+- Update flags overview status column ([#9961](https://github.com/Unleash/unleash/issues/9961))
+
+- Add getProjectLinkTemplates method ([#9971](https://github.com/Unleash/unleash/issues/9971))
+
+- Make all feature toggle service write methods transactional ([#9973](https://github.com/Unleash/unleash/issues/9973))
+
+- Link templates applied on flags ([#9976](https://github.com/Unleash/unleash/issues/9976))
+
+- Event log environment filter ([#9979](https://github.com/Unleash/unleash/issues/9979))
+
+- Now only recents show segments that are not being used currently ([#9983](https://github.com/Unleash/unleash/issues/9983))
+
+- Now recently used constraints are not shown if already in use ([#9984](https://github.com/Unleash/unleash/issues/9984))
+
+- Unleash v7 ESM migration ([#9877](https://github.com/Unleash/unleash/issues/9877))
+
+- Plausible tracking for links ([#9988](https://github.com/Unleash/unleash/issues/9988))
+
+- Now updating strategy also saves recents ([#9990](https://github.com/Unleash/unleash/issues/9990))
+
+- Now pressing enter will submit the new rollout percentage ([#9995](https://github.com/Unleash/unleash/issues/9995))
+
+- Constraints that are in recents will have generated key ([#9996](https://github.com/Unleash/unleash/issues/9996))
+
+- Track last seen clients using bulk update  ([#9981](https://github.com/Unleash/unleash/issues/9981))
+
+- Custom metrics poc ([#10018](https://github.com/Unleash/unleash/issues/10018))
+
+- Add migration for cdn_tokens ([#10021](https://github.com/Unleash/unleash/issues/10021))
+
+- Custom metrics ([#10022](https://github.com/Unleash/unleash/issues/10022))
+
+- Add required cdn events ([#10040](https://github.com/Unleash/unleash/issues/10040))
+
+- Update sidebar navigation - refactors ([#10037](https://github.com/Unleash/unleash/issues/10037))
+
+- Clean up old OAS and ability to add badges to descriptions ([#10038](https://github.com/Unleash/unleash/issues/10038))
+
+- Prepopulate new user ([#10057](https://github.com/Unleash/unleash/issues/10057))
+
+- Fail in dev when usign deprecated endpoints ([#10058](https://github.com/Unleash/unleash/issues/10058))
+
+- Update configuration menu ([#10041](https://github.com/Unleash/unleash/issues/10041))
+
+- Lifecycle trends migration ([#10066](https://github.com/Unleash/unleash/issues/10066))
+
+- Make lifecycle trends more detailed ([#10079](https://github.com/Unleash/unleash/issues/10079))
+
+- Rename health to technical debt ([#10063](https://github.com/Unleash/unleash/issues/10063))
+
+- Add lifecycle trend graphs ([#10077](https://github.com/Unleash/unleash/issues/10077))
+
+- Update backend to include `technicalDebt` field ([#10088](https://github.com/Unleash/unleash/issues/10088))
+
+- Rename health insights to technical debt insights on dashboard ([#10082](https://github.com/Unleash/unleash/issues/10082))
+
+- Improve feedback UX ([#10099](https://github.com/Unleash/unleash/issues/10099))
+
+- Feedback score N/A ([#10114](https://github.com/Unleash/unleash/issues/10114))
+
+- Adjust feedback columns ([#10119](https://github.com/Unleash/unleash/issues/10119))
+
+
+### Miscellaneous Tasks
+
+- Unknown flags ([#9837](https://github.com/Unleash/unleash/issues/9837))
+
+- Generate orval types ([#9919](https://github.com/Unleash/unleash/issues/9919))
+
+- Fix strategy tests
+
+- Use tokenname instead of username in frontend for api-token creation ([#9891](https://github.com/Unleash/unleash/issues/9891))
+
+- Ignore sample cdn url ([#9925](https://github.com/Unleash/unleash/issues/9925))
+
+- Make operator checking more ergonomic and type-ful ([#9932](https://github.com/Unleash/unleash/issues/9932))
+
+- Fix strategy tests ([#9922](https://github.com/Unleash/unleash/issues/9922))
+
+- Prevent duplicate key errors in unknown flags ([#9940](https://github.com/Unleash/unleash/issues/9940))
+
+- Get rid of editable constraint wrapper ([#9921](https://github.com/Unleash/unleash/issues/9921))
+
+- Update frontend OpenAPI models -  ([#9943](https://github.com/Unleash/unleash/issues/9943))
+
+- Remove newStrategyDropdown flag ([#9952](https://github.com/Unleash/unleash/issues/9952))
+
+- Remove embedProxy flag ([#9874](https://github.com/Unleash/unleash/issues/9874))
+
+- Update styling for variant box ([#9953](https://github.com/Unleash/unleash/issues/9953))
+
+- Remove semver version from footer and proxy from sdk list ([#9956](https://github.com/Unleash/unleash/issues/9956))
+
+- Get invalid and deleted legal values ([#9963](https://github.com/Unleash/unleash/issues/9963))
+
+- Remove proxy from integrations ([#9962](https://github.com/Unleash/unleash/issues/9962))
+
+- Clarify deleted legal values warning ([#9969](https://github.com/Unleash/unleash/issues/9969))
+
+- Fix setConstraints being undefined/null ([#9972](https://github.com/Unleash/unleash/issues/9972))
+
+- Fix rendering issue without setConstraints ([#9975](https://github.com/Unleash/unleash/issues/9975))
+
+- Accept 429 responses ([#9974](https://github.com/Unleash/unleash/issues/9974))
+
+- Undeprecate custom strategies ([#9939](https://github.com/Unleash/unleash/issues/9939))
+
+- Now we need to build before running tests ([#9989](https://github.com/Unleash/unleash/issues/9989))
+
+- Minor strategy edit header updates ([#9992](https://github.com/Unleash/unleash/issues/9992))
+
+- New getting started email template ([#9980](https://github.com/Unleash/unleash/issues/9980))
+
+- New invite email template improvements ([#9997](https://github.com/Unleash/unleash/issues/9997))
+
+- Small visual improvements to the new invite mail template ([#9998](https://github.com/Unleash/unleash/issues/9998))
+
+- Revive archive page ([#10001](https://github.com/Unleash/unleash/issues/10001))
+
+- Disable delete button if a context field has usage ([#10002](https://github.com/Unleash/unleash/issues/10002))
+
+- Deleted legal values not being cleared when you select new ones ([#9986](https://github.com/Unleash/unleash/issues/9986))
+
+- Remove filterExistingFlagNames feature flag ([#9957](https://github.com/Unleash/unleash/issues/9957))
+
+- Migrate tests to vitest
+
+- Stop using deprecated properties and lean on resourceLimits cfg ([#9994](https://github.com/Unleash/unleash/issues/9994))
+
+- Remove flagsReleaseManagementUI and flagsOverviewSearch flags ([#10011](https://github.com/Unleash/unleash/issues/10011))
+
+- Removed unnecessary NODE_ENV setting ([#10013](https://github.com/Unleash/unleash/issues/10013))
+
+- Bump base image for OSS docker ([#10014](https://github.com/Unleash/unleash/issues/10014))
+
+- Remove teams integration CR events flag ([#10015](https://github.com/Unleash/unleash/issues/10015))
+
+- Fix typo ([#10016](https://github.com/Unleash/unleash/issues/10016))
+
+- Remove console.log and reuse package scripts ([#10025](https://github.com/Unleash/unleash/issues/10025))
+
+- [**breaking**] Remove deprecated POST ui-config endpoint ([#10027](https://github.com/Unleash/unleash/issues/10027))
+
+- Don't include passwordLink if it's unleashUrl ([#10029](https://github.com/Unleash/unleash/issues/10029))
+
+- [**breaking**] Remove deprecated POST events search endpoint ([#10030](https://github.com/Unleash/unleash/issues/10030))
+
+- Add lifecycleMetrics flag definition ([#10033](https://github.com/Unleash/unleash/issues/10033))
+
+- Prefer searchEvents over deprecated methods ([#10031](https://github.com/Unleash/unleash/issues/10031))
+
+- Bump http-proxy-middleware from 2.0.7 to 2.0.9 in /frontend ([#9786](https://github.com/Unleash/unleash/issues/9786))
+
+- [**breaking**] Remove deprecated delete project groups roles endpoint ([#10036](https://github.com/Unleash/unleash/issues/10036))
+
+- Simplify serving of static openapi assets ([#10046](https://github.com/Unleash/unleash/issues/10046))
+
+- [**breaking**] Remove deprecated put project groups roles endpoint ([#10059](https://github.com/Unleash/unleash/issues/10059))
+
+- [**breaking**] Remove isAPI from userSchema response ([#10060](https://github.com/Unleash/unleash/issues/10060))
+
+- Print out 10 unknown flag names ([#10062](https://github.com/Unleash/unleash/issues/10062))
+
+- Clean up project related tech debt ([#10065](https://github.com/Unleash/unleash/issues/10065))
+
+- [**breaking**] Remove deprecated get metrics traffic ([#10064](https://github.com/Unleash/unleash/issues/10064))
+
+- Remove flag cleanup reminder ([#10074](https://github.com/Unleash/unleash/issues/10074))
+
+- Remove flag removeInactiveApplications ([#10075](https://github.com/Unleash/unleash/issues/10075))
+
+- Remove link flags ([#10076](https://github.com/Unleash/unleash/issues/10076))
+
+- [**breaking**] Remove feature variant endpoints ([#10071](https://github.com/Unleash/unleash/issues/10071))
+
+- [**breaking**] Removing userId strategy for new installations of Unleash ([#9800](https://github.com/Unleash/unleash/issues/9800))
+
+- [**breaking**] Remove deprecated project overview ([#10069](https://github.com/Unleash/unleash/issues/10069))
+
+- [**breaking**] Remove ILegacyApiTokenCreate ([#10072](https://github.com/Unleash/unleash/issues/10072))
+
+- Remove deprecation of instance stats endpoint ([#10083](https://github.com/Unleash/unleash/issues/10083))
+
+- Prepare to remove default env ([#10087](https://github.com/Unleash/unleash/issues/10087))
+
+- [**breaking**] Remove deprecated default env from new installs ([#10080](https://github.com/Unleash/unleash/issues/10080))
+
+- Bump minimum postgres version ([#10096](https://github.com/Unleash/unleash/issues/10096))
+
+- Rename insights -> analytics ([#10095](https://github.com/Unleash/unleash/issues/10095))
+
+- Replace flags per user with total number of flags ([#10102](https://github.com/Unleash/unleash/issues/10102))
+
+- Hide/disallow new instances of deprecated integrations ([#10104](https://github.com/Unleash/unleash/issues/10104))
+
+- Remove flag sideMenuCleanup ([#10093](https://github.com/Unleash/unleash/issues/10093))
+
+- Update frontend schema - technicalDebt ([#10098](https://github.com/Unleash/unleash/issues/10098))
+
+- [**breaking**] Remove project health report frontend ([#10101](https://github.com/Unleash/unleash/issues/10101))
+
+- Openapi-diff on PRs ([#10100](https://github.com/Unleash/unleash/issues/10100))
+
+- Fix skeleton loading indicator colors for lifecycle trend tiles ([#10109](https://github.com/Unleash/unleash/issues/10109))
+
+- Add brace-expansion to resolutions ([#10116](https://github.com/Unleash/unleash/issues/10116))
+
+- Fix weird button styling ([#10113](https://github.com/Unleash/unleash/issues/10113))
+
+- Ability to override NODE_ENV in dev ([#10118](https://github.com/Unleash/unleash/issues/10118))
+
+- Change package version
+
+
+### Refactor
+
+- Simplify feature toggle service deps ([#9964](https://github.com/Unleash/unleash/issues/9964))
+
+- Lax newUserInviteLink user arg ([#9967](https://github.com/Unleash/unleash/issues/9967))
+
+- Remove deprecated GET archive features endpoint ([#9924](https://github.com/Unleash/unleash/issues/9924))
+
+- Remove deprecated get archive featured by project endpoint ([#9938](https://github.com/Unleash/unleash/issues/9938))
+
+- Remove deprecated post project role access endpoint ([#9948](https://github.com/Unleash/unleash/issues/9948))
+
+- Clean up dead code after removing deprecated project role access endpoint ([#9949](https://github.com/Unleash/unleash/issues/9949))
+
+
+### Testing
+
+- Test constraint reducer ([#9966](https://github.com/Unleash/unleash/issues/9966))
+
+- UseEditableConstraint hook ([#9970](https://github.com/Unleash/unleash/issues/9970))
+
+
+### Migration
+
+- Project settings - external link templates ([#9933](https://github.com/Unleash/unleash/issues/9933))
+
+
+## [7.0.0] - 2025-06-11
+
+### 1-3744
+
+- Set a min-width for context field selector + underline when not focused ([#9991](https://github.com/Unleash/unleash/issues/9991))
+
+
+### Bug Fixes
+
+- Project environments have info about required approvals ([#9929](https://github.com/Unleash/unleash/issues/9929))
+
+- Avoid focus loss when using popover (and don't close multi-value popover after adding a value) ([#9951](https://github.com/Unleash/unleash/issues/9951))
+
+- Ensure linkTemplates defaults to an empty array if not provided
+
+- Don't autofocus the editable constraint field. ([#9982](https://github.com/Unleash/unleash/issues/9982))
+
+- Now feature is not pulled from server if not defined ([#10000](https://github.com/Unleash/unleash/issues/10000))
+
+- Hide project archive in OSS ([#10004](https://github.com/Unleash/unleash/issues/10004))
+
+- Setup cobertura coverage
+
+- Fix incorrect parameter usage to coverallsapp github action
+
+- Now feature component is not loaded before we have feature infor… ([#10012](https://github.com/Unleash/unleash/issues/10012))
+
+- Update config to make GHA reporting be better
+
+- Make revision id not be so reactive ([#10032](https://github.com/Unleash/unleash/issues/10032))
+
+- Removed docs folder and replaced with openapi-static ([#10042](https://github.com/Unleash/unleash/issues/10042))
+
+- Removed docs folder and replaced with openapi-static ([#10044](https://github.com/Unleash/unleash/issues/10044))
+
+- Allow openapi-static in docker ([#10045](https://github.com/Unleash/unleash/issues/10045))
+
+- Update dependency make-fetch-happen to v14 ([#10051](https://github.com/Unleash/unleash/issues/10051))
+
+- Update dependency pg to v8.16.0 ([#10054](https://github.com/Unleash/unleash/issues/10054))
+
+- Update dependency pg-connection-string to v2.9.0 ([#10055](https://github.com/Unleash/unleash/issues/10055))
+
+- Do not allow creating cr for same environment ([#10010](https://github.com/Unleash/unleash/issues/10010))
+
+- Regexes in flag naming patterns will now break when necessary ([#10067](https://github.com/Unleash/unleash/issues/10067))
+
+- Case sensitive icon has wrong fill color in dark mode ([#10068](https://github.com/Unleash/unleash/issues/10068))
+
+- Add event listeners for release plan updates in metrics ([#10070](https://github.com/Unleash/unleash/issues/10070))
+
+- Docker oss image now running with ESM ([#10073](https://github.com/Unleash/unleash/issues/10073))
+
+- Docs generation due to openapi static images ([#10078](https://github.com/Unleash/unleash/issues/10078))
+
+- Orval for ESM ([#10086](https://github.com/Unleash/unleash/issues/10086))
+
+- Enterprise image zoom ([#10081](https://github.com/Unleash/unleash/issues/10081))
+
+
+### Chore
+
+- Improve performance for large lists of legal values ([#9978](https://github.com/Unleash/unleash/issues/9978))
+
+- [**breaking**] Block deletion of context fields in use ([#10005](https://github.com/Unleash/unleash/issues/10005))
+
+- Add skeleton loaders for lifecycle trend numbers ([#10103](https://github.com/Unleash/unleash/issues/10103))
+
+
+### Documentation
+
+- Change 'Get a demo' to 'Start free trial' ([#9947](https://github.com/Unleash/unleash/issues/9947))
+
+- Update UI docs and screenshots for v6.10 ([#9902](https://github.com/Unleash/unleash/issues/9902))
+
+- Explain health API properly ([#10009](https://github.com/Unleash/unleash/issues/10009))
+
+
+### Features
+
+- Feature links section ([#9915](https://github.com/Unleash/unleash/issues/9915))
+
+- Add link ui ([#9918](https://github.com/Unleash/unleash/issues/9918))
+
+- Shared add link dialogue for 2 paths ([#9920](https://github.com/Unleash/unleash/issues/9920))
+
+- Delete link UI ([#9923](https://github.com/Unleash/unleash/issues/9923))
+
+- Edit link UI ([#9926](https://github.com/Unleash/unleash/issues/9926))
+
+- Order links by insertion order ([#9928](https://github.com/Unleash/unleash/issues/9928))
+
+- Add domain to links ([#9930](https://github.com/Unleash/unleash/issues/9930))
+
+- Store domain for links ([#9931](https://github.com/Unleash/unleash/issues/9931))
+
+- Report top used domains ([#9934](https://github.com/Unleash/unleash/issues/9934))
+
+- Prevent more than 10 links in the UI and backend ([#9937](https://github.com/Unleash/unleash/issues/9937))
+
+- Report feature links by domain ([#9936](https://github.com/Unleash/unleash/issues/9936))
+
+- External link templates ([#9927](https://github.com/Unleash/unleash/issues/9927))
+
+- Add tooltips to constraint operator buttons ([#9941](https://github.com/Unleash/unleash/issues/9941))
+
+- Remove instances older than 1 day not 2 days ([#9944](https://github.com/Unleash/unleash/issues/9944))
+
+- Ui for external link templates ([#9945](https://github.com/Unleash/unleash/issues/9945))
+
+- Use modal for managing link templates ([#9955](https://github.com/Unleash/unleash/issues/9955))
+
+- Export feature links ([#9954](https://github.com/Unleash/unleash/issues/9954))
+
+- Import feature links ([#9958](https://github.com/Unleash/unleash/issues/9958))
+
+- Add input box for gradual rollout slider ([#9960](https://github.com/Unleash/unleash/issues/9960))
+
+- Update flags overview status column ([#9961](https://github.com/Unleash/unleash/issues/9961))
+
+- Add getProjectLinkTemplates method ([#9971](https://github.com/Unleash/unleash/issues/9971))
+
+- Make all feature toggle service write methods transactional ([#9973](https://github.com/Unleash/unleash/issues/9973))
+
+- Link templates applied on flags ([#9976](https://github.com/Unleash/unleash/issues/9976))
+
+- Event log environment filter ([#9979](https://github.com/Unleash/unleash/issues/9979))
+
+- Now only recents show segments that are not being used currently ([#9983](https://github.com/Unleash/unleash/issues/9983))
+
+- Now recently used constraints are not shown if already in use ([#9984](https://github.com/Unleash/unleash/issues/9984))
+
+- Unleash v7 ESM migration ([#9877](https://github.com/Unleash/unleash/issues/9877))
+
+- Plausible tracking for links ([#9988](https://github.com/Unleash/unleash/issues/9988))
+
+- Now updating strategy also saves recents ([#9990](https://github.com/Unleash/unleash/issues/9990))
+
+- Now pressing enter will submit the new rollout percentage ([#9995](https://github.com/Unleash/unleash/issues/9995))
+
+- Constraints that are in recents will have generated key ([#9996](https://github.com/Unleash/unleash/issues/9996))
+
+- Track last seen clients using bulk update  ([#9981](https://github.com/Unleash/unleash/issues/9981))
+
+- Custom metrics poc ([#10018](https://github.com/Unleash/unleash/issues/10018))
+
+- Add migration for cdn_tokens ([#10021](https://github.com/Unleash/unleash/issues/10021))
+
+- Custom metrics ([#10022](https://github.com/Unleash/unleash/issues/10022))
+
+- Add required cdn events ([#10040](https://github.com/Unleash/unleash/issues/10040))
+
+- Update sidebar navigation - refactors ([#10037](https://github.com/Unleash/unleash/issues/10037))
+
+- Clean up old OAS and ability to add badges to descriptions ([#10038](https://github.com/Unleash/unleash/issues/10038))
+
+- Prepopulate new user ([#10057](https://github.com/Unleash/unleash/issues/10057))
+
+- Fail in dev when usign deprecated endpoints ([#10058](https://github.com/Unleash/unleash/issues/10058))
+
+- Update configuration menu ([#10041](https://github.com/Unleash/unleash/issues/10041))
+
+- Lifecycle trends migration ([#10066](https://github.com/Unleash/unleash/issues/10066))
+
+- Make lifecycle trends more detailed ([#10079](https://github.com/Unleash/unleash/issues/10079))
+
+- Rename health to technical debt ([#10063](https://github.com/Unleash/unleash/issues/10063))
+
+- Add lifecycle trend graphs ([#10077](https://github.com/Unleash/unleash/issues/10077))
+
+- Update backend to include `technicalDebt` field ([#10088](https://github.com/Unleash/unleash/issues/10088))
+
+- Rename health insights to technical debt insights on dashboard ([#10082](https://github.com/Unleash/unleash/issues/10082))
+
+- Improve feedback UX ([#10099](https://github.com/Unleash/unleash/issues/10099))
+
+- Feedback score N/A ([#10114](https://github.com/Unleash/unleash/issues/10114))
+
+- Adjust feedback columns ([#10119](https://github.com/Unleash/unleash/issues/10119))
+
+
+### Miscellaneous Tasks
+
+- Unknown flags ([#9837](https://github.com/Unleash/unleash/issues/9837))
+
+- Generate orval types ([#9919](https://github.com/Unleash/unleash/issues/9919))
+
+- Fix strategy tests
+
+- Use tokenname instead of username in frontend for api-token creation ([#9891](https://github.com/Unleash/unleash/issues/9891))
+
+- Ignore sample cdn url ([#9925](https://github.com/Unleash/unleash/issues/9925))
+
+- Make operator checking more ergonomic and type-ful ([#9932](https://github.com/Unleash/unleash/issues/9932))
+
+- Fix strategy tests ([#9922](https://github.com/Unleash/unleash/issues/9922))
+
+- Prevent duplicate key errors in unknown flags ([#9940](https://github.com/Unleash/unleash/issues/9940))
+
+- Get rid of editable constraint wrapper ([#9921](https://github.com/Unleash/unleash/issues/9921))
+
+- Update frontend OpenAPI models -  ([#9943](https://github.com/Unleash/unleash/issues/9943))
+
+- Remove newStrategyDropdown flag ([#9952](https://github.com/Unleash/unleash/issues/9952))
+
+- Remove embedProxy flag ([#9874](https://github.com/Unleash/unleash/issues/9874))
+
+- Update styling for variant box ([#9953](https://github.com/Unleash/unleash/issues/9953))
+
+- Remove semver version from footer and proxy from sdk list ([#9956](https://github.com/Unleash/unleash/issues/9956))
+
+- Get invalid and deleted legal values ([#9963](https://github.com/Unleash/unleash/issues/9963))
+
+- Remove proxy from integrations ([#9962](https://github.com/Unleash/unleash/issues/9962))
+
+- Clarify deleted legal values warning ([#9969](https://github.com/Unleash/unleash/issues/9969))
+
+- Fix setConstraints being undefined/null ([#9972](https://github.com/Unleash/unleash/issues/9972))
+
+- Fix rendering issue without setConstraints ([#9975](https://github.com/Unleash/unleash/issues/9975))
+
+- Accept 429 responses ([#9974](https://github.com/Unleash/unleash/issues/9974))
+
+- Undeprecate custom strategies ([#9939](https://github.com/Unleash/unleash/issues/9939))
+
+- Now we need to build before running tests ([#9989](https://github.com/Unleash/unleash/issues/9989))
+
+- Minor strategy edit header updates ([#9992](https://github.com/Unleash/unleash/issues/9992))
+
+- New getting started email template ([#9980](https://github.com/Unleash/unleash/issues/9980))
+
+- New invite email template improvements ([#9997](https://github.com/Unleash/unleash/issues/9997))
+
+- Small visual improvements to the new invite mail template ([#9998](https://github.com/Unleash/unleash/issues/9998))
+
+- Revive archive page ([#10001](https://github.com/Unleash/unleash/issues/10001))
+
+- Disable delete button if a context field has usage ([#10002](https://github.com/Unleash/unleash/issues/10002))
+
+- Deleted legal values not being cleared when you select new ones ([#9986](https://github.com/Unleash/unleash/issues/9986))
+
+- Remove filterExistingFlagNames feature flag ([#9957](https://github.com/Unleash/unleash/issues/9957))
+
+- Migrate tests to vitest
+
+- Stop using deprecated properties and lean on resourceLimits cfg ([#9994](https://github.com/Unleash/unleash/issues/9994))
+
+- Remove flagsReleaseManagementUI and flagsOverviewSearch flags ([#10011](https://github.com/Unleash/unleash/issues/10011))
+
+- Removed unnecessary NODE_ENV setting ([#10013](https://github.com/Unleash/unleash/issues/10013))
+
+- Bump base image for OSS docker ([#10014](https://github.com/Unleash/unleash/issues/10014))
+
+- Remove teams integration CR events flag ([#10015](https://github.com/Unleash/unleash/issues/10015))
+
+- Fix typo ([#10016](https://github.com/Unleash/unleash/issues/10016))
+
+- Remove console.log and reuse package scripts ([#10025](https://github.com/Unleash/unleash/issues/10025))
+
+- [**breaking**] Remove deprecated POST ui-config endpoint ([#10027](https://github.com/Unleash/unleash/issues/10027))
+
+- Don't include passwordLink if it's unleashUrl ([#10029](https://github.com/Unleash/unleash/issues/10029))
+
+- [**breaking**] Remove deprecated POST events search endpoint ([#10030](https://github.com/Unleash/unleash/issues/10030))
+
+- Add lifecycleMetrics flag definition ([#10033](https://github.com/Unleash/unleash/issues/10033))
+
+- Prefer searchEvents over deprecated methods ([#10031](https://github.com/Unleash/unleash/issues/10031))
+
+- Bump http-proxy-middleware from 2.0.7 to 2.0.9 in /frontend ([#9786](https://github.com/Unleash/unleash/issues/9786))
+
+- [**breaking**] Remove deprecated delete project groups roles endpoint ([#10036](https://github.com/Unleash/unleash/issues/10036))
+
+- Simplify serving of static openapi assets ([#10046](https://github.com/Unleash/unleash/issues/10046))
+
+- [**breaking**] Remove deprecated put project groups roles endpoint ([#10059](https://github.com/Unleash/unleash/issues/10059))
+
+- [**breaking**] Remove isAPI from userSchema response ([#10060](https://github.com/Unleash/unleash/issues/10060))
+
+- Print out 10 unknown flag names ([#10062](https://github.com/Unleash/unleash/issues/10062))
+
+- Clean up project related tech debt ([#10065](https://github.com/Unleash/unleash/issues/10065))
+
+- [**breaking**] Remove deprecated get metrics traffic ([#10064](https://github.com/Unleash/unleash/issues/10064))
+
+- Remove flag cleanup reminder ([#10074](https://github.com/Unleash/unleash/issues/10074))
+
+- Remove flag removeInactiveApplications ([#10075](https://github.com/Unleash/unleash/issues/10075))
+
+- Remove link flags ([#10076](https://github.com/Unleash/unleash/issues/10076))
+
+- [**breaking**] Remove feature variant endpoints ([#10071](https://github.com/Unleash/unleash/issues/10071))
+
+- [**breaking**] Removing userId strategy for new installations of Unleash ([#9800](https://github.com/Unleash/unleash/issues/9800))
+
+- [**breaking**] Remove deprecated project overview ([#10069](https://github.com/Unleash/unleash/issues/10069))
+
+- [**breaking**] Remove ILegacyApiTokenCreate ([#10072](https://github.com/Unleash/unleash/issues/10072))
+
+- Remove deprecation of instance stats endpoint ([#10083](https://github.com/Unleash/unleash/issues/10083))
+
+- Prepare to remove default env ([#10087](https://github.com/Unleash/unleash/issues/10087))
+
+- [**breaking**] Remove deprecated default env from new installs ([#10080](https://github.com/Unleash/unleash/issues/10080))
+
+- Bump minimum postgres version ([#10096](https://github.com/Unleash/unleash/issues/10096))
+
+- Rename insights -> analytics ([#10095](https://github.com/Unleash/unleash/issues/10095))
+
+- Replace flags per user with total number of flags ([#10102](https://github.com/Unleash/unleash/issues/10102))
+
+- Hide/disallow new instances of deprecated integrations ([#10104](https://github.com/Unleash/unleash/issues/10104))
+
+- Remove flag sideMenuCleanup ([#10093](https://github.com/Unleash/unleash/issues/10093))
+
+- Update frontend schema - technicalDebt ([#10098](https://github.com/Unleash/unleash/issues/10098))
+
+- [**breaking**] Remove project health report frontend ([#10101](https://github.com/Unleash/unleash/issues/10101))
+
+- Openapi-diff on PRs ([#10100](https://github.com/Unleash/unleash/issues/10100))
+
+- Fix skeleton loading indicator colors for lifecycle trend tiles ([#10109](https://github.com/Unleash/unleash/issues/10109))
+
+- Add brace-expansion to resolutions ([#10116](https://github.com/Unleash/unleash/issues/10116))
+
+- Fix weird button styling ([#10113](https://github.com/Unleash/unleash/issues/10113))
+
+- Ability to override NODE_ENV in dev ([#10118](https://github.com/Unleash/unleash/issues/10118))
+
+- Change package version
+
+
+### Refactor
+
+- Simplify feature toggle service deps ([#9964](https://github.com/Unleash/unleash/issues/9964))
+
+- Lax newUserInviteLink user arg ([#9967](https://github.com/Unleash/unleash/issues/9967))
+
+- Remove deprecated GET archive features endpoint ([#9924](https://github.com/Unleash/unleash/issues/9924))
+
+- Remove deprecated get archive featured by project endpoint ([#9938](https://github.com/Unleash/unleash/issues/9938))
+
+- Remove deprecated post project role access endpoint ([#9948](https://github.com/Unleash/unleash/issues/9948))
+
+- Clean up dead code after removing deprecated project role access endpoint ([#9949](https://github.com/Unleash/unleash/issues/9949))
+
+
+### Testing
+
+- Test constraint reducer ([#9966](https://github.com/Unleash/unleash/issues/9966))
+
+- UseEditableConstraint hook ([#9970](https://github.com/Unleash/unleash/issues/9970))
+
+
+### Migration
+
+- Project settings - external link templates ([#9933](https://github.com/Unleash/unleash/issues/9933))
+
+
+## [6.10.0] - 2025-05-07
+
+### Bug Fixes
+
+- Appropriately size case icon for non-editing constraints ([#9869](https://github.com/Unleash/unleash/issues/9869))
+
+- Namespace flag-repo for unleash sdk ([#9910](https://github.com/Unleash/unleash/issues/9910))
+
+- Make setConstraints work in editable constraints list ([#9913](https://github.com/Unleash/unleash/issues/9913))
+
+
+### Documentation
+
+- Remove roadmap from footer ([#9890](https://github.com/Unleash/unleash/issues/9890))
+
+- Update self-hosting guide ([#9855](https://github.com/Unleash/unleash/issues/9855))
+
+
+### Features
+
+- View for recently used constraints ([#9860](https://github.com/Unleash/unleash/issues/9860))
+
+- Now updating/editing strategy will store constraints in recents ([#9861](https://github.com/Unleash/unleash/issues/9861))
+
+- Separate frontend and backend applications from edge ([#9863](https://github.com/Unleash/unleash/issues/9863))
+
+- Update search placement on flags overview screen ([#9854](https://github.com/Unleash/unleash/issues/9854))
+
+- Allow nullable client ip for frontend apps ([#9867](https://github.com/Unleash/unleash/issues/9867))
+
+- Now recent constraints work e2e ([#9868](https://github.com/Unleash/unleash/issues/9868))
+
+- Handle nullable sdk type ([#9872](https://github.com/Unleash/unleash/issues/9872))
+
+- Recently used constraints have use this button now ([#9871](https://github.com/Unleash/unleash/issues/9871))
+
+- Add date type input field for constraints. ([#9864](https://github.com/Unleash/unleash/issues/9864))
+
+- Bulk apps should respect multi projects and multi envs ([#9879](https://github.com/Unleash/unleash/issues/9879))
+
+- Recently used segments ([#9881](https://github.com/Unleash/unleash/issues/9881))
+
+- Feature link backend stub ([#9893](https://github.com/Unleash/unleash/issues/9893))
+
+- Recently used segment chip ([#9895](https://github.com/Unleash/unleash/issues/9895))
+
+- Feature link migration ([#9900](https://github.com/Unleash/unleash/issues/9900))
+
+- Sql feature link persistence ([#9901](https://github.com/Unleash/unleash/issues/9901))
+
+- Enterprise consumption billing ([#9862](https://github.com/Unleash/unleash/issues/9862))
+
+- Add links to feature read model ([#9905](https://github.com/Unleash/unleash/issues/9905))
+
+- Normalize urls in feature links ([#9911](https://github.com/Unleash/unleash/issues/9911))
+
+
+### Miscellaneous Tasks
+
+- Use numeric input mode for numbers. ([#9875](https://github.com/Unleash/unleash/issues/9875))
+
+- Flag cleanup simplifyDisableFeature ([#9892](https://github.com/Unleash/unleash/issues/9892))
+
+- Feature links flag ([#9896](https://github.com/Unleash/unleash/issues/9896))
+
+- Clean dead code ([#9903](https://github.com/Unleash/unleash/issues/9903))
+
+- Remove dead code ([#9906](https://github.com/Unleash/unleash/issues/9906))
+
+- Align recently used constraints to designs ([#9904](https://github.com/Unleash/unleash/issues/9904))
+
+- Clean up adminNavUI flag ([#9907](https://github.com/Unleash/unleash/issues/9907))
+
+- Constraint validation ([#9909](https://github.com/Unleash/unleash/issues/9909))
+
+
+### Refactor
+
+- Stabilize frontend apps reporting ([#9880](https://github.com/Unleash/unleash/issues/9880))
+
+- Remove flagOverviewRedesign flag ([#9888](https://github.com/Unleash/unleash/issues/9888))
+
+
+## [6.9.2] - 2025-04-29
+
+### Bug Fixes
+
+- Use unleash to enable frontend SDK with token via variant ([#9757](https://github.com/Unleash/unleash/issues/9757))
+
+- Improve status job performance ([#9755](https://github.com/Unleash/unleash/issues/9755))
+
+- Demo QR code ([#9756](https://github.com/Unleash/unleash/issues/9756))
+
+- Now only shows average daily requests when viewing daily ([#9758](https://github.com/Unleash/unleash/issues/9758))
+
+- Improve health rating job performance ([#9761](https://github.com/Unleash/unleash/issues/9761))
+
+- Search page filtered placeholder ([#9763](https://github.com/Unleash/unleash/issues/9763))
+
+- Demo topics should work with new flag design ([#9765](https://github.com/Unleash/unleash/issues/9765))
+
+- Demo flow consistency with new flag page ([#9770](https://github.com/Unleash/unleash/issues/9770))
+
+- Demo flow step 4 is too eager on add strategy ([#9771](https://github.com/Unleash/unleash/issues/9771))
+
+- Double token initialization ([#9783](https://github.com/Unleash/unleash/issues/9783))
+
+- Import path for formatOperatorDescription ([#9791](https://github.com/Unleash/unleash/issues/9791))
+
+- Add docker compose file for enterprise ([#9809](https://github.com/Unleash/unleash/issues/9809))
+
+- Strategy-reorder tooltip padding ([#9811](https://github.com/Unleash/unleash/issues/9811))
+
+- Stale flag status chip ([#9821](https://github.com/Unleash/unleash/issues/9821))
+
+- Legal value selector chips and option updates ([#9819](https://github.com/Unleash/unleash/issues/9819))
+
+- Remove pushed files
+
+- Lint ([#9858](https://github.com/Unleash/unleash/issues/9858))
+
+
+### Documentation
+
+- ADR correct type dependencies ([#9749](https://github.com/Unleash/unleash/issues/9749))
+
+- Add missing Edge pages to autogenerated docs ([#9737](https://github.com/Unleash/unleash/issues/9737))
+
+- Update hosting strategies page ([#9729](https://github.com/Unleash/unleash/issues/9729))
+
+- Hosting options - apply suggestions for latency and client-side context ([#9777](https://github.com/Unleash/unleash/issues/9777))
+
+- Scaling Unleash use case tutorial ([#9784](https://github.com/Unleash/unleash/issues/9784))
+
+- Update docs preview image  ([#9852](https://github.com/Unleash/unleash/issues/9852))
+
+
+### Feat
+
+- Update variants placement ([#9832](https://github.com/Unleash/unleash/issues/9832))
+
+
+### Features
+
+- Description for stickiness selector ([#9746](https://github.com/Unleash/unleash/issues/9746))
+
+- Search page flag status with change requests ([#9744](https://github.com/Unleash/unleash/issues/9744))
+
+- Predefined values more organized ([#9752](https://github.com/Unleash/unleash/issues/9752))
+
+- Display total count ([#9753](https://github.com/Unleash/unleash/issues/9753))
+
+- Strategy status as checkbox ([#9760](https://github.com/Unleash/unleash/issues/9760))
+
+- Search page - improved change request tooltip ([#9750](https://github.com/Unleash/unleash/issues/9750))
+
+- Remove add values for legal values ([#9767](https://github.com/Unleash/unleash/issues/9767))
+
+- Add values button now actually adds value ([#9768](https://github.com/Unleash/unleash/issues/9768))
+
+- Move admin menu into nav sidebar ([#9774](https://github.com/Unleash/unleash/issues/9774))
+
+- Cleanup reminder ([#9776](https://github.com/Unleash/unleash/issues/9776))
+
+- Archive reminder ([#9779](https://github.com/Unleash/unleash/issues/9779))
+
+- Archive reminder icon ([#9781](https://github.com/Unleash/unleash/issues/9781))
+
+- Styling of new add values ([#9788](https://github.com/Unleash/unleash/issues/9788))
+
+- Add values chip styling ([#9789](https://github.com/Unleash/unleash/issues/9789))
+
+- Redirect logic refactor ([#9734](https://github.com/Unleash/unleash/issues/9734))
+
+- Remind me later about cleanup ([#9790](https://github.com/Unleash/unleash/issues/9790))
+
+- Futureproofing last viewed page redirect ([#9794](https://github.com/Unleash/unleash/issues/9794))
+
+- Snooze reminder tracking ([#9798](https://github.com/Unleash/unleash/issues/9798))
+
+- Revert to production ([#9802](https://github.com/Unleash/unleash/issues/9802))
+
+- Enter will select the first filtered value ([#9807](https://github.com/Unleash/unleash/issues/9807))
+
+- Move 'copy flag name' button ([#9805](https://github.com/Unleash/unleash/issues/9805))
+
+- Run cypress against current branch ([#9793](https://github.com/Unleash/unleash/issues/9793))
+
+- Local dev should honor our schemas ([#9799](https://github.com/Unleash/unleash/issues/9799))
+
+- Move away from old accordion list, create/edit segment ([#9820](https://github.com/Unleash/unleash/issues/9820))
+
+- Change requests, use new accordion list not legacy ([#9825](https://github.com/Unleash/unleash/issues/9825))
+
+- Lifecycle count query ([#9824](https://github.com/Unleash/unleash/issues/9824))
+
+- Remove warning boxes for empty values ([#9830](https://github.com/Unleash/unleash/issues/9830))
+
+- 1-3652/legal value selector visual update ([#9829](https://github.com/Unleash/unleash/issues/9829))
+
+- Remove sort by user on flags overview ([#9826](https://github.com/Unleash/unleash/issues/9826))
+
+- Remove inactive applications ([#9835](https://github.com/Unleash/unleash/issues/9835))
+
+- Separate constraint edit/view screens ([#9836](https://github.com/Unleash/unleash/issues/9836))
+
+- Remove old instances based on last seen not created at ([#9833](https://github.com/Unleash/unleash/issues/9833))
+
+- Client instances sdk type ([#9844](https://github.com/Unleash/unleash/issues/9844))
+
+- Count per lifecycle stage ([#9845](https://github.com/Unleash/unleash/issues/9845))
+
+- Spike frontend applications registration ([#9846](https://github.com/Unleash/unleash/issues/9846))
+
+- Split and clean up constraint lists ([#9839](https://github.com/Unleash/unleash/issues/9839))
+
+- Recently used constraints hook
+
+- Recently used constraints hook ([#9850](https://github.com/Unleash/unleash/issues/9850))
+
+- Show backend and frontend sdks separately ([#9857](https://github.com/Unleash/unleash/issues/9857))
+
+
+### Miscellaneous Tasks
+
+- Inline values list v1 ([#9743](https://github.com/Unleash/unleash/issues/9743))
+
+- Update api types in frontend ([#9748](https://github.com/Unleash/unleash/issues/9748))
+
+- Aggregate daily metrics query time instrumentation ([#9764](https://github.com/Unleash/unleash/issues/9764))
+
+- Fix coverage report ([#9695](https://github.com/Unleash/unleash/issues/9695))
+
+- Bump vite from 5.4.16 to 5.4.18 in /frontend ([#9766](https://github.com/Unleash/unleash/issues/9766))
+
+- Cleanup reminder flag ([#9769](https://github.com/Unleash/unleash/issues/9769))
+
+- Improve demo finish CTA ([#9773](https://github.com/Unleash/unleash/issues/9773))
+
+- Make demo back button variant text ([#9772](https://github.com/Unleash/unleash/issues/9772))
+
+- Improve demo auth screen ([#9780](https://github.com/Unleash/unleash/issues/9780))
+
+- Update demo final steps content ([#9782](https://github.com/Unleash/unleash/issues/9782))
+
+- Menu cleanups ([#9792](https://github.com/Unleash/unleash/issues/9792))
+
+- Set new demo step titles ([#9795](https://github.com/Unleash/unleash/issues/9795))
+
+- Demo misc improvements ([#9796](https://github.com/Unleash/unleash/issues/9796))
+
+- Adjust reminder days ([#9810](https://github.com/Unleash/unleash/issues/9810))
+
+- Comments in docker-compose file ([#9812](https://github.com/Unleash/unleash/issues/9812))
+
+- Remove disable notifications UI ([#9814](https://github.com/Unleash/unleash/issues/9814))
+
+- Ignore checking bricks-software links ([#9675](https://github.com/Unleash/unleash/issues/9675))
+
+- Clean up old accordion code path  ([#9813](https://github.com/Unleash/unleash/issues/9813))
+
+- Remove demo plans dialog ([#9816](https://github.com/Unleash/unleash/issues/9816))
+
+- Add terraform to integrations ([#9827](https://github.com/Unleash/unleash/issues/9827))
+
+- Update OpenAPI frontend types ([#9834](https://github.com/Unleash/unleash/issues/9834))
+
+- Fix admin routes should respect plan data ([#9828](https://github.com/Unleash/unleash/issues/9828))
+
+- Remove an old test for old migration that we now know works ([#9841](https://github.com/Unleash/unleash/issues/9841))
+
+- Second design pass for editable constraints ([#9843](https://github.com/Unleash/unleash/issues/9843))
+
+- Remove flag for global change request config ([#9840](https://github.com/Unleash/unleash/issues/9840))
+
+- Fix colors, sizes and corner roundings on admin menu ([#9847](https://github.com/Unleash/unleash/issues/9847))
+
+- Replace inherit color on menu item hover to common.white ([#9856](https://github.com/Unleash/unleash/issues/9856))
+
+
+### Refactor
+
+- Move release plan stores to OSS ([#9747](https://github.com/Unleash/unleash/issues/9747))
+
+- Extract flags overview sql builders ([#9751](https://github.com/Unleash/unleash/issues/9751))
+
+- Move batch execute to oss ([#9754](https://github.com/Unleash/unleash/issues/9754))
+
+- Deprecate old ConstraintAccordion and point to new version ([#9613](https://github.com/Unleash/unleash/issues/9613))
+
+- Pass feature to feature overview metadata component ([#9803](https://github.com/Unleash/unleash/issues/9803))
+
+
 ## [6.9.1] - 2025-04-10
 
 ### Bug Fixes

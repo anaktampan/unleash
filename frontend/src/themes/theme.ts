@@ -1,6 +1,5 @@
 import { createTheme } from '@mui/material/styles';
-import { colors } from './colors';
-import { alpha } from '@mui/material';
+import { colors } from './colors.js';
 import { focusable } from 'themes/themeStyles';
 
 export const baseTheme = {
@@ -249,16 +248,6 @@ const theme = {
             inactive: colors.orange[200],
             abandoned: colors.red[200],
             primary: colors.purple[100],
-        },
-
-        /**
-         * For Environment Accordion.
-         * @deprecated Use `elevation1` for `disabled` and `elevation2` for `expanded` instead.
-         * remove with the flagOverviewRedesign flag
-         */
-        envAccordion: {
-            disabled: colors.grey[100],
-            expanded: colors.grey[200],
         },
 
         /**
@@ -516,17 +505,6 @@ export const lightTheme = createTheme({
                 root: ({ theme }) => ({
                     '&:first-of-type, &:last-of-type': {
                         borderRadius: theme.shape.borderRadiusLarge,
-                    },
-                    // Environment accordion -- remove with `flagOverviewRedesign` flag
-                    '&.environment-accordion.Mui-expanded': {
-                        outline: `2px solid ${alpha(
-                            theme.palette.background.alternative,
-                            0.6,
-                        )}`,
-                        boxShadow: `0px 2px 8px ${alpha(
-                            theme.palette.primary.main,
-                            0.2,
-                        )}`,
                     },
                 }),
             },

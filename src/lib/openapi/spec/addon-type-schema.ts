@@ -1,6 +1,6 @@
 import type { FromSchema } from 'json-schema-to-ts';
-import { addonParameterSchema } from './addon-parameter-schema';
-import { tagTypeSchema } from './tag-type-schema';
+import { addonParameterSchema } from './addon-parameter-schema.js';
+import { tagTypeSchema } from './tag-type-schema.js';
 
 export const addonTypeSchema = {
     $id: '#/components/schemas/addonTypeSchema',
@@ -136,7 +136,7 @@ export const addonTypeSchema = {
                     type: 'string',
                     description:
                         'A URL to where the addon configuration should redirect to install addons of this type.',
-                    example: 'https://unleash-slack-app.vercel.app/install',
+                    example: 'https://slack-app.getunleash.io/install',
                 },
                 title: {
                     type: 'string',

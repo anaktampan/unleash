@@ -7,9 +7,11 @@ import type {
     IChangeRequestUpdateSegment,
 } from 'component/changeRequest/changeRequest.types';
 import { useSegment } from 'hooks/api/getters/useSegment/useSegment';
-import { SegmentDiff, SegmentTooltipLink } from '../../SegmentTooltipLink';
-import { ConstraintAccordionList } from 'component/common/LegacyConstraintAccordion/ConstraintAccordionList/ConstraintAccordionList';
-import { ChangeOverwriteWarning } from './ChangeOverwriteWarning/ChangeOverwriteWarning';
+import { SegmentDiff, SegmentTooltipLink } from '../../SegmentTooltipLink.tsx';
+
+import { ViewableConstraintsList } from 'component/common/NewConstraintAccordion/ConstraintsList/ViewableConstraintsList';
+
+import { ChangeOverwriteWarning } from './ChangeOverwriteWarning/ChangeOverwriteWarning.tsx';
 
 const ChangeItemCreateEditWrapper = styled(Box)(({ theme }) => ({
     display: 'grid',
@@ -113,9 +115,8 @@ export const SegmentChangeDetails: FC<{
                         </ChangeItemInfo>
                         <div>{actions}</div>
                     </ChangeItemCreateEditWrapper>
-                    <ConstraintAccordionList
+                    <ViewableConstraintsList
                         constraints={change.payload.constraints}
-                        showLabel={false}
                     />
                 </>
             )}

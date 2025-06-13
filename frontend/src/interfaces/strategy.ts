@@ -1,6 +1,6 @@
 import type { Operator } from 'constants/operators';
-import type { IFeatureVariant } from './featureToggle';
-import { constraintId } from 'component/common/LegacyConstraintAccordion/ConstraintAccordionList/createEmptyConstraint';
+import type { IFeatureVariant } from './featureToggle.js';
+import { constraintId } from 'constants/constraintId.js';
 
 export interface IFeatureStrategy {
     id: string;

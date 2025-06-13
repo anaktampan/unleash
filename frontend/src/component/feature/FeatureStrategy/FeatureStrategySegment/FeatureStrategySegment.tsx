@@ -10,7 +10,8 @@ import { SegmentDocsStrategyWarning } from 'component/segments/SegmentDocs';
 import { useSegmentLimits } from 'hooks/api/getters/useSegmentLimits/useSegmentLimits';
 import { Box, styled, Typography } from '@mui/material';
 import { HelpIcon } from 'component/common/HelpIcon/HelpIcon';
-import { useUiFlag } from 'hooks/useUiFlag';
+
+import { RecentlyUsedSegments } from './RecentlyUsedSegments/RecentlyUsedSegments.tsx';
 
 interface IFeatureStrategySegmentProps {
     segments: ISegment[];
@@ -30,7 +31,6 @@ export const FeatureStrategySegment = ({
     setSegments: setSelectedSegments,
     projectId,
 }: IFeatureStrategySegmentProps) => {
-    const addEditStrategy = useUiFlag('addEditStrategy');
     const { segments: allSegments } = useSegments();
     const { strategySegmentsLimit } = useSegmentLimits();
 
@@ -98,12 +98,16 @@ export const FeatureStrategySegment = ({
                 options={autocompleteOptions}
                 onChange={onChange}
                 disabled={atStrategySegmentsLimit}
-                icon={addEditStrategy ? null : undefined}
+                icon={null}
                 width={'175px'}
             />
             <FeatureStrategySegmentList
                 segments={selectedSegments}
                 setSegments={setSelectedSegments}
+            />
+            <RecentlyUsedSegments
+                setSegments={setSelectedSegments}
+                segments={selectedSegments}
             />
         </>
     );

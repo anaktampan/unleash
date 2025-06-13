@@ -1,7 +1,7 @@
 import { PayloadType, type Variant } from 'unleash-client';
-import { parseEnvVarBoolean } from '../util';
-import { getDefaultVariant } from 'unleash-client/lib/variant';
-import type { Context } from '../features/playground/feature-evaluator';
+import { parseEnvVarBoolean } from '../util/index.js';
+import { getDefaultVariant } from 'unleash-client/lib/variant.js';
+import type { Context } from '../features/playground/feature-evaluator/index.js';
 
 export type IFlagKey =
     | 'accessLogs'
@@ -9,8 +9,6 @@ export type IFlagKey =
     | 'encryptEmails'
     | 'enableLicense'
     | 'enableLicenseChecker'
-    | 'embedProxy'
-    | 'embedProxyFrontend'
     | 'responseTimeWithAppNameKillSwitch'
     | 'maintenanceMode'
     | 'messageBanner'
@@ -22,7 +20,6 @@ export type IFlagKey =
     | 'disableBulkToggle'
     | 'advancedPlayground'
     | 'filterInvalidClientMetrics'
-    | 'filterExistingFlagNames'
     | 'disableMetrics'
     | 'signals'
     | 'automatedActions'
@@ -50,8 +47,6 @@ export type IFlagKey =
     | 'releasePlans'
     | 'productivityReportEmail'
     | 'productivityReportUnsubscribers'
-    | 'enterprise-payg'
-    | 'flagOverviewRedesign'
     | 'showUserDeviceCount'
     | 'memorizeStats'
     | 'streaming'
@@ -59,17 +54,13 @@ export type IFlagKey =
     | 'deltaApi'
     | 'uniqueSdkTracking'
     | 'consumptionModel'
-    | 'teamsIntegrationChangeRequests'
     | 'edgeObservability'
-    | 'simplifyDisableFeature'
-    | 'adminNavUI'
-    | 'tagTypeColor'
-    | 'globalChangeRequestConfig'
-    | 'addEditStrategy'
-    | 'newStrategyDropdown'
-    | 'flagsOverviewSearch'
-    | 'flagsReleaseManagementUI'
-    | 'cleanupReminder';
+    | 'registerFrontendClient'
+    | 'reportUnknownFlags'
+    | 'lastSeenBulkQuery'
+    | 'lifecycleMetrics'
+    | 'customMetrics'
+    | 'createFlagDialogCache';
 
 export type IFlags = Partial<{ [key in IFlagKey]: boolean | Variant }>;
 
@@ -77,14 +68,6 @@ const flags: IFlags = {
     anonymiseEventLog: false,
     enableLicense: false,
     enableLicenseChecker: false,
-    embedProxy: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_EMBED_PROXY,
-        true,
-    ),
-    embedProxyFrontend: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_EMBED_PROXY_FRONTEND,
-        true,
-    ),
     responseTimeWithAppNameKillSwitch: parseEnvVarBoolean(
         process.env.UNLEASH_RESPONSE_TIME_WITH_APP_NAME_KILL_SWITCH,
         false,
@@ -124,10 +107,6 @@ const flags: IFlags = {
         false,
     ),
     filterInvalidClientMetrics: parseEnvVarBoolean(
-        process.env.FILTER_INVALID_CLIENT_METRICS,
-        false,
-    ),
-    filterExistingFlagNames: parseEnvVarBoolean(
         process.env.FILTER_INVALID_CLIENT_METRICS,
         false,
     ),
@@ -253,16 +232,8 @@ const flags: IFlags = {
         process.env.UNLEASH_EXPERIMENTAL_PRODUCTIVITY_REPORT_UNSUBSCRIBERS,
         false,
     ),
-    'enterprise-payg': parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_ENTERPRISE_PAYG,
-        false,
-    ),
     showUserDeviceCount: parseEnvVarBoolean(
         process.env.UNLEASH_EXPERIMENTAL_SHOW_USER_DEVICE_COUNT,
-        false,
-    ),
-    flagOverviewRedesign: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_FLAG_OVERVIEW_REDESIGN,
         false,
     ),
     streaming: parseEnvVarBoolean(
@@ -286,48 +257,28 @@ const flags: IFlags = {
         process.env.EXPERIMENTAL_CONSUMPTION_MODEL,
         false,
     ),
-    teamsIntegrationChangeRequests: parseEnvVarBoolean(
-        process.env.EXPERIMENTAL_TEAMS_INTEGRATION_CHANGE_REQUESTS,
-        false,
-    ),
     edgeObservability: parseEnvVarBoolean(
         process.env.EXPERIMENTAL_EDGE_OBSERVABILITY,
         false,
     ),
-    simplifyDisableFeature: parseEnvVarBoolean(
-        process.env.EXPERIMENTAL_SIMPLIFY_DISABLE_FEATURE,
+    registerFrontendClient: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_REGISTER_FRONTEND_CLIENT,
         false,
     ),
-    adminNavUI: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_ADMIN_NAV_UI,
+    reportUnknownFlags: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_REPORT_UNKNOWN_FLAGS,
         false,
     ),
-    tagTypeColor: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_TAG_TYPE_COLOR,
+    lastSeenBulkQuery: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_LAST_SEEN_BULK_QUERY,
         false,
     ),
-    globalChangeRequestConfig: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_GLOBAL_CHANGE_REQUEST_CONFIG,
+    lifecycleMetrics: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_LIFECYCLE_METRICS,
         false,
     ),
-    addEditStrategy: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_ADD_EDIT_STRATEGY,
-        false,
-    ),
-    newStrategyDropdown: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_NEW_STRATEGY_DROPDOWN,
-        false,
-    ),
-    flagsOverviewSearch: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_FLAGS_OVERVIEW_SEARCH,
-        false,
-    ),
-    flagsReleaseManagementUI: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_FLAGS_RELEASE_MANAGEMENT_UI,
-        false,
-    ),
-    cleanupReminder: parseEnvVarBoolean(
-        process.env.UNLEASH_EXPERIMENTAL_CLEANUP_REMINDER,
+    createFlagDialogCache: parseEnvVarBoolean(
+        process.env.UNLEASH_EXPERIMENTAL_CREATE_FLAG_DIALOG_CACHE,
         false,
     ),
 };

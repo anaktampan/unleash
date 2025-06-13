@@ -1,16 +1,15 @@
 import type { Express } from 'express';
 import type EventEmitter from 'events';
-import type { LogLevel, LogProvider } from '../logger';
-import type { ILegacyApiTokenCreate } from './models/api-token';
+import type { LogLevel, LogProvider } from '../logger.js';
+import type { IApiTokenCreate } from './model.js';
 import type {
     IExperimentalOptions,
     IFlagContext,
     IFlagResolver,
     IFlags,
-} from './experimental';
-import type SMTPTransport from 'nodemailer/lib/smtp-transport';
-import type { IUnleashServices } from './services';
-import type { ResourceLimitsSchema } from '../openapi/spec/resource-limits-schema';
+} from './experimental.js';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport/index.js';
+import type { IUnleashServices } from '../services/index.js';
 
 export interface ISSLOption {
     rejectUnauthorized: boolean;
@@ -86,7 +85,7 @@ export interface IAuthOption {
     customAuthHandler?: CustomAuthHandler;
     createAdminUser?: boolean;
     initialAdminUser?: UsernameAdminUser;
-    initApiTokens: ILegacyApiTokenCreate[];
+    initApiTokens: IApiTokenCreate[];
 }
 
 export interface IImportOption {
@@ -117,6 +116,25 @@ export interface IServerOption {
 export interface IClientCachingOption {
     enabled: boolean;
     maxAge: number;
+}
+
+export interface ResourceLimits {
+    apiTokens: number;
+    constraints: number;
+    constraintValues: number;
+    environments: number;
+    featureFlags: number;
+    featureEnvironmentStrategies: number;
+    projects: number;
+    segments: number;
+    segmentValues: number;
+    strategySegments: number;
+    actionSetActions: number;
+    actionSetsPerProject: number;
+    actionSetFilters: number;
+    actionSetFilterValues: number;
+    signalEndpoints: number;
+    signalTokensPerEndpoint: number;
 }
 
 export interface IUnleashOptions {
@@ -152,19 +170,7 @@ export interface IUnleashOptions {
     dailyMetricsStorageDays?: number;
     rateLimiting?: Partial<IRateLimiting>;
     isOss?: boolean;
-    resourceLimits?: Partial<
-        Pick<
-            ResourceLimitsSchema,
-            | 'apiTokens'
-            | 'constraintValues'
-            | 'constraints'
-            | 'environments'
-            | 'featureEnvironmentStrategies'
-            | 'featureFlags'
-            | 'projects'
-            | 'segments'
-        >
-    >;
+    resourceLimits?: Partial<ResourceLimits>;
     userInactivityThresholdInDays?: number;
     unleashFrontendToken?: string;
 }
@@ -276,7 +282,7 @@ export interface IUnleashConfig {
     segmentValuesLimit: number;
     /** @deprecated: use resourceLimits.strategySegments */
     strategySegmentsLimit: number;
-    resourceLimits: ResourceLimitsSchema;
+    resourceLimits: ResourceLimits;
     metricsRateLimiting: IMetricsRateLimiting;
     dailyMetricsStorageDays: number;
     clientFeatureCaching: IClientCachingOption;
